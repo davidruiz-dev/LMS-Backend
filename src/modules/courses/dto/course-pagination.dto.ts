@@ -10,4 +10,5 @@ export class CoursePagination extends PaginationDto {
     @IsString()
     @IsOptional()
     order?: 'ASC' | 'DESC' = 'ASC';
+    search: string;
 }

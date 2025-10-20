@@ -5,10 +5,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Course } from './entities/course.entity';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { GradeLevel } from '../grade-level/entities/grade-level.entity'; 
+import { User } from 'src/modules/users/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Course, GradeLevel]),
+    TypeOrmModule.forFeature([Course, GradeLevel, User]),
     CloudinaryModule
   ],
   controllers: [CoursesController],

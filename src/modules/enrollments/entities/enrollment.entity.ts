@@ -17,8 +17,7 @@ export class Enrollment {
     @Column({ default: 'active' }) // Puede ser 'active', 'completed', 'dropped'
     status: string;
 
-    @Column()
-    enrollmentRole: string
+    
 
     @CreateDateColumn()
     createdAt: Date

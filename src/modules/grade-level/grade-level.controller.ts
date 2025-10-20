@@ -25,21 +25,21 @@ export class GradeLevelController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.gradeLevelService.findOne(+id);
+    return this.gradeLevelService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateGradeLevelDto: UpdateGradeLevelDto) {
-    return this.gradeLevelService.update(+id, updateGradeLevelDto);
+    return this.gradeLevelService.update(id, updateGradeLevelDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.gradeLevelService.remove(+id);
+    return this.gradeLevelService.remove(id);
   }
 
   @Post(':id/restore')
   restore(@Param('id') id: string){
-    return this.gradeLevelService.restore(+id)
+    return this.gradeLevelService.restore(id)
   }
 }

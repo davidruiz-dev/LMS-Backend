@@ -20,6 +20,16 @@ export class UsersController {
     return this.usersService.findAll(query);
   }
 
+  @Get('instructors/search')
+  findInstructorsByEmail(@Query('email') email: string) {
+    return this.usersService.findInstructorByEmail(email);
+  }
+
+  @Get('students/search')
+  findStudentsByEmail(@Query('email') email: string) {
+    return this.usersService.findStudentsByEmail(email);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);

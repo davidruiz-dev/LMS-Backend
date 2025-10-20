@@ -11,6 +11,8 @@ export class Course {
     name: string
     @Column({type: 'text'})
     description: string
+    @Column({nullable: true})
+    short_description: string;
     @Column()
     startDate: Date
     @Column()
@@ -22,6 +24,7 @@ export class Course {
     @Column({default: false})
     isActive: boolean
     @ManyToOne(()=> User, (instructor) => instructor.courses, {nullable: true})
+    @JoinColumn({ name: 'instructorId' })
     instructor: User
     @ManyToOne(()=> GradeLevel, (gl) => gl.courses)
     @JoinColumn({ name: 'gradeLevelId' })
