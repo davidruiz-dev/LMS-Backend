@@ -17,6 +17,21 @@ export class EnrollmentsController {
     return this.enrollmentsService.findAll();
   }
 
+  @Get('course/:id')
+  getEnrollmentsByCourseId(@Param('id') id: string) {
+    return this.enrollmentsService.getEnrollmentsByCourseId(id);
+  }
+
+  @Get('user/:id')
+  findAllEnrolledCoursesByUser(@Param('id') id: string) {
+    return this.enrollmentsService.findAllEnrolledCoursesByUser(id);
+  }
+
+  @Get('active/user/:id')
+  findEnrolledActiveCoursesByUser(@Param('id') id: string) {
+    return this.enrollmentsService.findEnrolledActiveCoursesByUser(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.enrollmentsService.findOne(id);

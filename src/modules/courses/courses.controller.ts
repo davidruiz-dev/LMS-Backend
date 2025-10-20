@@ -15,6 +15,7 @@ export class CoursesController {
     @Body() createCourseDto: CreateCourseDto,
     @UploadedFile() imagen: Express.Multer.File
   ) {
+    console.log("createCourseDto: ",createCourseDto)
     return this.coursesService.create(createCourseDto, imagen);
   }
 
@@ -29,8 +30,9 @@ export class CoursesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
-    return this.coursesService.update(+id, updateCourseDto);
+  @UseInterceptors(FileInterceptor('imagen'))
+  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto, @UploadedFile() imagen: Express.Multer.File) {
+    return this.coursesService.update(id, updateCourseDto, imagen);
   }
 
   @Delete(':id')

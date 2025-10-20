@@ -3,11 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './modules/users/users.module'; 
 import { CoursesModule } from './modules/courses/courses.module';
 import { AuthModule } from './auth/auth.module';
-import { RolesModule } from './modules/roles/roles.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { GradeLevelModule } from './modules/grade-level/grade-level.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -24,11 +24,13 @@ import { GradeLevelModule } from './modules/grade-level/grade-level.module';
     UsersModule,
     CoursesModule,
     AuthModule,
-    RolesModule,
     CommentsModule,
     PostsModule,
     EnrollmentsModule,
     GradeLevelModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
   ],
   controllers: [],
   providers: [],

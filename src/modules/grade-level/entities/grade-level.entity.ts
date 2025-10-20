@@ -9,7 +9,7 @@ export enum Level {
 @Entity('grade_levels')
 export class GradeLevel {
     @PrimaryGeneratedColumn('uuid')
-    id: number
+    id: string
     @Column()
     name: string
     @Column({type: 'enum', enum: Level, default: Level.PRIMARIA,})

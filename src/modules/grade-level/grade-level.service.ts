@@ -73,13 +73,13 @@ export class GradeLevelService {
     }
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const gradeLevel = await this.gradeLevelRepository.findOneBy({id});
     if (!gradeLevel) throw new NotFoundException(`Grado con ID ${id} no encontrado`)
     return gradeLevel;
   }
 
-  async update(id: number, updateGradeLevelDto: UpdateGradeLevelDto) {
+  async update(id: string, updateGradeLevelDto: UpdateGradeLevelDto) {
     const gradeLevel = await this.gradeLevelRepository.findOneBy({ id });
     if (!gradeLevel) {
       throw new NotFoundException(`Grado con ID ${id} no encontrado`);
@@ -88,7 +88,7 @@ export class GradeLevelService {
     return this.gradeLevelRepository.save(gradeLevel);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const gradeLevel = await this.gradeLevelRepository.findOne({
       where: {id: id},
       relations: ['courses']
@@ -104,7 +104,7 @@ export class GradeLevelService {
     }
   }
 
-  async restore(id: number){
+  async restore(id: string){
     const result = await this.gradeLevelRepository.restore(id);
     if (result.affected === 0) {
       throw new NotFoundException(`GradeLevel con ID ${id} no encontrado o no está eliminado`);
