@@ -2,6 +2,9 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { EnrollmentsService } from './enrollments.service';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
+import { CurrentUser, UserPayload } from 'src/auth/decorators/current-user.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserRole } from 'src/modules/users/entities/user.entity';
 
 @Controller('enrollments')
 export class EnrollmentsController {
@@ -15,6 +18,12 @@ export class EnrollmentsController {
   @Get()
   findAll() {
     return this.enrollmentsService.findAll();
+  }
+
+  @Get('me')
+  @Roles(UserRole.STUDENT)
+  getMyEnrollments(@CurrentUser() user: UserPayload,) {
+    return this.enrollmentsService.getMyEnrollments(user.id);
   }
 
   @Get('course/:id')

@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsOptional } from "class-validator"
+import { CourseStatus } from "src/modules/courses/entities/course.entity"
 import { GradeLevel } from "src/modules/grade-level/entities/grade-level.entity"
 import { User } from "src/modules/users/entities/user.entity"
 
@@ -21,4 +22,6 @@ export class CreateCourseDto {
     @IsNotEmpty()
     instructor: User
     instructorId: string;
+    @IsOptional()
+    status: CourseStatus;
 }

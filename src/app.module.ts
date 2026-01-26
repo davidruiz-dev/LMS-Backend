@@ -8,6 +8,7 @@ import { PostsModule } from './modules/posts/posts.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { GradeLevelModule } from './modules/grade-level/grade-level.module';
 import { ConfigModule } from '@nestjs/config';
+import { ModulesModule } from 'src/modules/modules/modules.module';
 
 @Module({
   imports: [
@@ -28,9 +29,11 @@ import { ConfigModule } from '@nestjs/config';
     PostsModule,
     EnrollmentsModule,
     GradeLevelModule,
+    ModulesModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    
   ],
   controllers: [],
   providers: [],

@@ -1,9 +1,10 @@
-import { Course } from "src/modules/courses/entities/course.entity"
-import { User } from "src/modules/users/entities/user.entity"
+import { ApiProperty } from "@nestjs/swagger"
+import { IsUUID } from "class-validator"
 
 export class CreateEnrollmentDto {
-    course: Course
+    @ApiProperty()
+    @IsUUID()
     courseId: string
-    user: User
+    @IsUUID()
     userId: string
 }

@@ -40,6 +40,13 @@ export class EnrollmentsService {
     return `This action returns all enrollments`;
   }
 
+  async getMyEnrollments(userId: string){
+    return await this.enrollmentRepository.find({
+      where: { user: { id: userId} },
+      relations: ['user', 'course', 'course.gradeLevel', 'course.instructor']
+    })
+  }
+
   async findAllEnrolledCoursesByUser(userId: string){
     const enrollments = await this.enrollmentRepository.find({
       where: { user: { id: userId} },

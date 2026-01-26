@@ -15,12 +15,12 @@ async function bootstrap() {
       firstName: 'Admin',
       lastName: 'Admin',
       email: 'admin@example.com',
-      password: 'securePassword123', // Asegúrate de hashear si es necesario
+      password: 'securePassword123', 
       role: UserRole.ADMIN,
     });
-    console.log('✅ Admin user created');
+    console.log('Admin user created');
   } else {
-    console.log('ℹ️ Admin already exists');
+    console.log('ℹAdmin already exists');
   }
 
   await app.close();
