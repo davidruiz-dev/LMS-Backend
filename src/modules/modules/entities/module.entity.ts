@@ -1,5 +1,5 @@
 import { Course } from 'src/modules/courses/entities/course.entity';
-import { Lesson } from 'src/modules/lessons/entities/lesson.entity';
+import { ModuleItem } from 'src/modules/modules/entities/module-item.entity';
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('modules')
@@ -10,13 +10,10 @@ export class Module {
   @Column({ length: 200 })
   title: string;
 
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
   @Column({ type: 'int', default: 0 })
   position: number;
 
-  @Column({ default: true })
+  @Column({ default: false })
   isPublished: boolean;
 
   @ManyToOne(() => Course, (course) => course.modules, { onDelete: 'CASCADE' })
@@ -26,8 +23,8 @@ export class Module {
   @Column()
   courseId: string;
 
-  @OneToMany(() => Lesson, (item) => item.module)
-  lessons: Lesson[];
+  @OneToMany(() => ModuleItem, (item) => item.module)
+  items: ModuleItem[];
 
   // timestamps
   @CreateDateColumn()

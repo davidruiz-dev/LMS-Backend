@@ -10,6 +10,7 @@ import { GradeLevel } from '../grade-level/entities/grade-level.entity';
 import { User, UserRole } from 'src/modules/users/entities/user.entity';
 import { paginateResponse } from 'src/common/helpers/pagination-response';
 import { UserPayload } from 'src/auth/decorators/current-user.decorator';
+import { EnrollmentStatus } from 'src/modules/enrollments/entities/enrollment.entity';
 
 @Injectable()
 export class CoursesService {
@@ -154,6 +155,14 @@ export class CoursesService {
       limit,
       route: `${process.env.API_BASE_URL}/courses`,
     });
+  }
+
+  async findMyCoursesActive(userId: string, role: UserRole) {
+    if (role !== UserRole.INSTRUCTOR) {
+      throw new Error('Only instructors can access this endpoint');
+    }
+    const courses = await this.courseRepository.find({ where: { instructorId: userId, status: CourseStatus.PUBLISHED } });
+    return courses;
   }
 
   private async findCoursesByInstructor(instructorId: string, pagination: CoursePagination) {

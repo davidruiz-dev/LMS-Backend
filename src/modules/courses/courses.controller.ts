@@ -33,6 +33,13 @@ export class CoursesController {
     return this.coursesService.findAll(paginationDto, user);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
+  @Get('my-courses/active')
+  async findMyCoursesActive(@CurrentUser() user: UserPayload) {
+    return this.coursesService.findMyCoursesActive(user.id, user.role)
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: UserPayload,) {
     return this.coursesService.findOne(id, user.id, user.role);

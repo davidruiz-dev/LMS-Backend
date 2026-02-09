@@ -21,5 +21,5 @@ export class CreateModuleDto {
   @ApiPropertyOptional({ default: true })
   @IsBoolean()
   @IsOptional()
-  published?: boolean;
+  isPublished?: boolean;
 }

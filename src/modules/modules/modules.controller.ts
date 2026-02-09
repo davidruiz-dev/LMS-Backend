@@ -6,10 +6,12 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/modules/users/entities/user.entity';
 import { CurrentUser, UserPayload } from 'src/auth/decorators/current-user.decorator';
 import { ReorderModulesDto } from 'src/modules/modules/dto/reorder-modules.dto';
+import { CreateModuleItemDto } from 'src/modules/modules/dto/create-module-item.dto';
+import { ReorderModuleItemsDto } from 'src/modules/modules/dto/reorder-module-items.dto';
 
 @Controller('courses/:courseId/modules')
 export class ModulesController {
-  constructor(private readonly modulesService: ModulesService) {}
+  constructor(private readonly modulesService: ModulesService) { }
 
   @Post()
   @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
@@ -27,8 +29,8 @@ export class ModulesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.modulesService.findOne(id);
+  findOne(@Param('courseId') courseId: string, @Param('id') id: string) {
+    return this.modulesService.findOne(courseId, id);
   }
 
   @Patch(':id')
@@ -40,14 +42,15 @@ export class ModulesController {
   ) {
     return this.modulesService.update(id, updateModuleDto, user.id, user.role);
   }
- 
+
   @Delete(':id')
   @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
   async remove(
+    @Param('courseId') courseId: string,
     @Param('id') id: string,
     @CurrentUser() user: UserPayload,
   ) {
-    return this.modulesService.remove(id, user.id, user.role);
+    return this.modulesService.remove(courseId, id, user.id, user.role);
   }
 
   @Post('reorder')
@@ -62,5 +65,47 @@ export class ModulesController {
   }
 
 
-  // Module lessons endpoints
+  // Module items endpoints
+  @Get(':moduleId/items')
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN, UserRole.STUDENT)
+  async createItem(
+    @Param('courseId') courseId: string,
+    @Param('moduleId') moduleId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.modulesService.findAllItemsByModule(courseId, moduleId);
+  }
+
+  @Post(':moduleId/items')
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
+  createModuleItem(
+    @Param('courseId') courseId: string,
+    @Param('moduleId') moduleId: string,
+    @Body() createItemDto: CreateModuleItemDto,
+    @CurrentUser() user: UserPayload,
+  ){
+    return this.modulesService.createItem(courseId, moduleId, createItemDto, user.id, user.role);
+  }
+
+  @Delete(':moduleId/items/:id')
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
+  async deleteItem(
+    @Param('courseId') courseId: string,
+    @Param('moduleId') moduleId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: UserPayload,
+  ){
+    return this.modulesService.removeItem(courseId, moduleId, id, user.id, user.role)
+  }
+
+  @Post(':moduleId/items/reorder')
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
+  async reorderItems(
+    @Param('courseId') courseId: string,
+    @Param('moduleId') moduleId: string,
+    @Body() reorderDto: ReorderModuleItemsDto,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.modulesService.reorderItems(courseId, moduleId, reorderDto, user.id, user.role);
+  }
 }

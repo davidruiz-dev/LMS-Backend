@@ -2,9 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Enrollment } from './entities/enrollment.entity';
+import { Enrollment, EnrollmentStatus } from './entities/enrollment.entity';
 import { Repository } from 'typeorm';
-import { Course } from 'src/modules/courses/entities/course.entity';
+import { Course, CourseStatus } from 'src/modules/courses/entities/course.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 
 @Injectable()
@@ -26,6 +26,7 @@ export class EnrollmentsService {
     }
     const course = await this.courseRepository.findOne({where: {id: createEnrollmentDto.courseId}});
     if (!course) throw new NotFoundException('Course not found');
+    if (course.status !== CourseStatus.PUBLISHED) throw new NotFoundException('Cannot enroll in an unpublished course');
     const user = await this.userRepository.findOne({where: {id: createEnrollmentDto.userId}});
     if (!user) throw new NotFoundException('user not found');
 
@@ -42,7 +43,7 @@ export class EnrollmentsService {
 
   async getMyEnrollments(userId: string){
     return await this.enrollmentRepository.find({
-      where: { user: { id: userId} },
+      where: { user: { id: userId } },
       relations: ['user', 'course', 'course.gradeLevel', 'course.instructor']
     })
   }
@@ -57,7 +58,7 @@ export class EnrollmentsService {
 
   async findEnrolledActiveCoursesByUser(userId: string){
     const enrollments = await this.enrollmentRepository.find({
-      where: { user: { id: userId} },
+      where: { user: { id: userId }, status: EnrollmentStatus.ACTIVE, course: { status: CourseStatus.PUBLISHED}},
       relations: ['user', 'course', 'course.gradeLevel', 'course.instructor']
     })
     return enrollments.map(enrollment => enrollment.course)

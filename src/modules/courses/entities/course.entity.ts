@@ -1,3 +1,4 @@
+import { Assignment } from "src/modules/assignments/entities/assignment.entity";
 import { Enrollment } from "src/modules/enrollments/entities/enrollment.entity";
 import { GradeLevel } from "src/modules/grade-level/entities/grade-level.entity";
 import { Module } from "src/modules/modules/entities/module.entity";
@@ -46,6 +47,9 @@ export class Course {
 
     @OneToMany(() => Module, (module) => module.course)
     modules: Module[];
+
+    @OneToMany(() => Assignment, (assignment) => assignment.course)
+    assignments: Assignment[];
     
     // timestamps
     @CreateDateColumn()
