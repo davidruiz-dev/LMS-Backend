@@ -27,6 +27,9 @@ export class ModuleItem {
     @Column({ type: 'text', nullable: true })
     content: string;
 
+    @Column({ type: 'varchar', length: 1000, nullable: true })
+    externalUrl: string;
+
     @Column({ type: 'int', default: 0 })
     position: number;
 

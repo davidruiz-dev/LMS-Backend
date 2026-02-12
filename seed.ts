@@ -20,7 +20,7 @@ async function bootstrap() {
     });
     console.log('Admin user created');
   } else {
-    console.log('ℹAdmin already exists');
+    console.log('Admin already exists');
   }
 
   await app.close();

@@ -7,24 +7,27 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/modules/users/entities/user.entity';
+import { EnrollmentGuard } from 'src/common/guards/enrollment.guard';
+import { CourseOwnerGuard } from 'src/common/guards/course-owner.guard';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('courses/:courseId/assignments')
 export class AssignmentsController {
   constructor(private readonly assignmentsService: AssignmentsService) {}
 
-  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
   @Post()
+  @UseGuards(CourseOwnerGuard)
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
   create(
     @Param('courseId') courseId: string,
+    @Body() createAssignmentDto: CreateAssignmentDto,
     @CurrentUser() user: UserPayload,
-    @Body() createAssignmentDto: CreateAssignmentDto
   ) {
     return this.assignmentsService.create(courseId, createAssignmentDto, user.id, user.role);
   }
 
-  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN, UserRole.STUDENT)
   @Get()
+  @UseGuards(EnrollmentGuard)
   findAll(
     @Param('courseId') courseId: string,
     @CurrentUser() user: UserPayload,
@@ -32,8 +35,17 @@ export class AssignmentsController {
     return this.assignmentsService.findAll(courseId, user.id, user.role);
   }
 
-  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN, UserRole.STUDENT)
+  @Get('upcoming')
+  @UseGuards(EnrollmentGuard)
+  findUpcoming(
+    @Param('courseId') courseId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.assignmentsService.findUpcoming(courseId, userId);
+  }
+
   @Get(':id')
+  @UseGuards(EnrollmentGuard)
   findOne(
     @Param('id') id: string,
     @Param('courseId') courseId: string,
@@ -43,12 +55,45 @@ export class AssignmentsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAssignmentDto: UpdateAssignmentDto) {
-    return this.assignmentsService.update(+id, updateAssignmentDto);
+  @UseGuards(CourseOwnerGuard)
+  update(
+    @Param('courseId') courseId: string,
+    @Param('id') assignmentId: string,
+    @Body() updateAssignmentDto: UpdateAssignmentDto,
+  ) {
+    return this.assignmentsService.update(
+      courseId,
+      assignmentId,
+      updateAssignmentDto,
+    );
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.assignmentsService.remove(+id);
+  @UseGuards(CourseOwnerGuard)
+  remove(
+    @Param('courseId') courseId: string,
+    @Param('id') assignmentId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
+  ) {
+    return this.assignmentsService.remove(courseId, assignmentId, userId, role);
+  }
+
+  @Post(':id/publish')
+  @UseGuards(CourseOwnerGuard)
+  publish(
+    @Param('courseId') courseId: string,
+    @Param('id') assignmentId: string,
+  ) {
+    return this.assignmentsService.publishAssignment(courseId, assignmentId);
+  }
+
+  @Post(':id/unpublish')
+  @UseGuards(CourseOwnerGuard)
+  unpublish(
+    @Param('courseId') courseId: string,
+    @Param('id') assignmentId: string,
+  ) {
+    return this.assignmentsService.unpublishAssignment(courseId, assignmentId);
   }
 }

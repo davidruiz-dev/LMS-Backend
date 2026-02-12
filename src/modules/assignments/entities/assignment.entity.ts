@@ -1,5 +1,6 @@
 import { Course } from "src/modules/courses/entities/course.entity";
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Submission } from "src/modules/submissions/entities/submission.entity";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 export enum AssignmentType {
   ASSIGNMENT = 'assignment',     // ← Tarea tradicional (subir archivo/texto)
@@ -12,37 +13,69 @@ export enum AssignmentType {
 
 @Entity('assignments')
 export class Assignment {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @Column()
-    name: string;
+  @Column()
+  name: string;
 
-    @Column()
-    description: string;
+  @Column()
+  description: string;
 
-    @Column({ type: 'enum', enum: AssignmentType, default: AssignmentType.ASSIGNMENT })
-    type: AssignmentType;
+  @Column({ nullable: true })
+  instructions: string;
 
-    @Column({ type: 'decimal', precision: 5, scale: 2 })
-    points: number;
+  @Column({ type: 'enum', enum: AssignmentType, default: AssignmentType.ASSIGNMENT })
+  type: AssignmentType;
 
-    @Column()
-    dueDate: Date;
+  @Column({ type: 'decimal', precision: 5, scale: 2 })
+  maxPoints: number;
 
-    @Column({ nullable: true })
-    availableFrom: Date;
+  @Column({ default: 2 })
+  maxAttempts: number;
 
-    @Column({ nullable: true })
-    availableUntil: Date;
+  @Column({ default: true })
+  allowLateSubmissions: boolean;
 
-    @Column({ default: true })
-    isPublished: boolean;
+  @Column()
+  dueDate: Date;
 
-    @ManyToOne(() => Course, course => course.assignments, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'courseId' })
-    course: Course;
+  @Column({ nullable: true })
+  availableFrom: Date;
 
-    @Column()
-    courseId: string;
+  @Column({ nullable: true })
+  availableUntil: Date;
+
+  @Column({ default: true })
+  isPublished: boolean;
+
+  @ManyToOne(() => Course, course => course.assignments, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'courseId' })
+  course: Course;
+
+  @Column()
+  courseId: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updateAt: Date;
+
+  @OneToMany(()=>Submission, submission => submission.assignment)
+  submissions: Submission[]
+
+  isAvailable(date: Date = new Date()): boolean {
+    if (!this.isPublished) return false;
+
+    if (this.availableFrom && date < this.availableFrom) {
+      return false;
+    }
+
+    if (this.availableUntil && date > this.availableUntil) {
+      return false;
+    }
+
+    return true;
+  }
 }
