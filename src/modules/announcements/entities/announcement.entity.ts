@@ -13,17 +13,21 @@ export class Announcement {
     @Column({ type: 'text'})
     content: string;
 
-    @ManyToOne(() => User)
-    @JoinColumn({ name: 'authorId' })
-    author: User;
     @Column()
     authorId: string;
+    
+    @ManyToOne(() => User, user => user.announcements)
+    @JoinColumn({ name: 'authorId' })
+    author: User;
 
     @ManyToOne(()=>Course)
     @JoinColumn({name: 'courseId'})
     course: Course;
     @Column()
     courseId: string;
+
+    @Column({ type: 'boolean', default: false})
+    isPublished: boolean;
 
     @CreateDateColumn()
     createdAt: Date;

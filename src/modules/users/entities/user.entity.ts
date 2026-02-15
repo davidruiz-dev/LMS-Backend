@@ -4,6 +4,7 @@ import { Enrollment } from "src/modules/enrollments/entities/enrollment.entity";
 import { Course } from "src/modules/courses/entities/course.entity";
 import { Post } from "src/modules/posts/entities/post.entity";
 import { Comment } from "src/modules/comments/entities/comment.entity";
+import { Announcement } from "src/modules/announcements/entities/announcement.entity";
 
 export enum UserRole {
     ADMIN = 'admin',
@@ -49,6 +50,9 @@ export class User {
     posts: Post[];
     @OneToMany(() => Comment, (comment) => comment.author)
     comments: Comment[];
+
+    @OneToMany(() => Announcement, (a) => a.author)
+    announcements: Announcement[]
 
     @CreateDateColumn()
     createdAt: Date

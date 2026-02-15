@@ -10,6 +10,7 @@ import { GradeLevelModule } from './modules/grade-level/grade-level.module';
 import { ConfigModule } from '@nestjs/config';
 import { ModulesModule } from 'src/modules/modules/modules.module';
 import { AssignmentsModule } from 'src/modules/assignments/assignments.module';
+import { AnnouncementsModule } from 'src/modules/announcements/announcements.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AssignmentsModule } from 'src/modules/assignments/assignments.module';
     GradeLevelModule,
     ModulesModule,
     AssignmentsModule,
+    AnnouncementsModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
