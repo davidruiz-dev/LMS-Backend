@@ -12,7 +12,7 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 @Controller('courses')
 export class CoursesController {
-  constructor(private readonly coursesService: CoursesService) {}
+  constructor(private readonly coursesService: CoursesService) { }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
@@ -65,5 +65,16 @@ export class CoursesController {
     @CurrentUser() user: UserPayload,
   ) {
     return this.coursesService.publish(id, user.id, user.role);
+  }
+
+  // enrollments
+  @UseGuards(JwtAuthGuard)
+  @Get(':courseId/enrollments')
+  async getClassmates(
+    @Param('courseId') courseId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    const enrollments = await this.coursesService.getEnrollmentsByCourseId(courseId, user);
+    return enrollments;
   }
 }

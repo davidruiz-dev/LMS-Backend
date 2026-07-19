@@ -6,10 +6,11 @@ import { Course } from './entities/course.entity';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { GradeLevel } from '../grade-level/entities/grade-level.entity'; 
 import { User } from 'src/modules/users/entities/user.entity';
+import { Enrollment } from '../enrollments/entities/enrollment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Course, GradeLevel, User]),
+    TypeOrmModule.forFeature([Course, GradeLevel, User, Enrollment]),
     CloudinaryModule
   ],
   controllers: [CoursesController],

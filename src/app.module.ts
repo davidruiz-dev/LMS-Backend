@@ -11,9 +11,13 @@ import { ConfigModule } from '@nestjs/config';
 import { ModulesModule } from 'src/modules/modules/modules.module';
 import { AssignmentsModule } from 'src/modules/assignments/assignments.module';
 import { AnnouncementsModule } from 'src/modules/announcements/announcements.module';
+import { QuizzesModule } from './modules/quizzes/quizzes.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -34,10 +38,7 @@ import { AnnouncementsModule } from 'src/modules/announcements/announcements.mod
     ModulesModule,
     AssignmentsModule,
     AnnouncementsModule,
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    
+    QuizzesModule,
   ],
   controllers: [],
   providers: [],

@@ -22,7 +22,6 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
       secret:  process.env.JWT_SECRET,
       signOptions: { expiresIn: '48h' },
     }),
-
   ],
   controllers: [AuthController],
   providers: [

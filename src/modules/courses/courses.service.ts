@@ -10,7 +10,7 @@ import { GradeLevel } from '../grade-level/entities/grade-level.entity';
 import { User, UserRole } from 'src/modules/users/entities/user.entity';
 import { paginateResponse } from 'src/common/helpers/pagination-response';
 import { UserPayload } from 'src/auth/decorators/current-user.decorator';
-import { EnrollmentStatus } from 'src/modules/enrollments/entities/enrollment.entity';
+import { Enrollment, EnrollmentStatus } from 'src/modules/enrollments/entities/enrollment.entity';
 
 @Injectable()
 export class CoursesService {
@@ -21,6 +21,8 @@ export class CoursesService {
     private readonly gradeLevelRepository: Repository<GradeLevel>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Enrollment)
+    private readonly enrollmentRepository: Repository<Enrollment>,
     private cloudinaryService: CloudinaryService,
   ) { }
 
@@ -280,5 +282,69 @@ export class CoursesService {
     if (course.enrollments.some(e => e.userId === userId) && course.status !== CourseStatus.PUBLISHED) {
       throw new ForbiddenException('No tienes acceso a este curso');
     }
+  }
+
+  async getEnrollmentsByCourseId(courseId: string, currentUser: UserPayload): Promise<Enrollment[]> {
+    // 1. Verificar que el curso exista
+    const course = await this.courseRepository.findOne({
+      where: {
+        id: courseId,
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Curso no encontrado');
+    }
+
+    // 2. Admin puede acceder
+    if (currentUser.role !== UserRole.ADMIN) {
+
+      // 3. Profesor propietario
+      const isTeacher = course.instructorId === currentUser.id;
+
+      // 4. Alumno inscrito
+      const isStudent = await this.enrollmentRepository.exists({
+        where: {
+          course: {
+            id: courseId,
+          },
+          user: {
+            id: currentUser.id,
+          },
+        },
+      });
+
+      if (!isTeacher && !isStudent) {
+        throw new ForbiddenException(
+          'No tienes permisos para ver los compañeros de este curso',
+        );
+      }
+    }
+
+    // 5. Obtener únicamente la información pública
+    const enrollments = await this.enrollmentRepository
+      .createQueryBuilder('enrollment')
+      .innerJoinAndSelect('enrollment.user', 'user')
+      .select([
+        'enrollment.id',
+        'enrollment.createdAt',
+        'enrollment.status',
+        'user.id',
+        'user.firstName',
+        'user.lastName',
+        'user.image',
+        'user.email',
+      ])
+      .where(
+        'enrollment.courseId = :courseId',
+        { courseId },
+      )
+      .orderBy(
+        'user.lastName',
+        'ASC',
+      )
+      .getMany();
+
+    return enrollments;
   }
 }
