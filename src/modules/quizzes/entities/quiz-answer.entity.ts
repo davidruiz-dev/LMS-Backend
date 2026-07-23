@@ -1,8 +1,9 @@
-import { Entity, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn, Unique } from 'typeorm';
 import { QuizAttempt } from './quiz-attempt.entity';
 import { QuizQuestion } from './quiz-question.entity';
 
 @Entity('quiz_answers')
+@Unique(['attemptId', 'questionId'])
 export class QuizAnswer {
     @PrimaryGeneratedColumn('uuid')
     id: string;

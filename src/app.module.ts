@@ -12,6 +12,7 @@ import { ModulesModule } from 'src/modules/modules/modules.module';
 import { AssignmentsModule } from 'src/modules/assignments/assignments.module';
 import { AnnouncementsModule } from 'src/modules/announcements/announcements.module';
 import { QuizzesModule } from './modules/quizzes/quizzes.module';
+import { SubmissionsModule } from './modules/submissions/submissions.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { QuizzesModule } from './modules/quizzes/quizzes.module';
     AssignmentsModule,
     AnnouncementsModule,
     QuizzesModule,
+    SubmissionsModule
   ],
   controllers: [],
   providers: [],

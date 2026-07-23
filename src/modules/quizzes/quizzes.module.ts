@@ -8,6 +8,8 @@ import { QuizQuestion } from './entities/quiz-question.entity';
 import { QuestionOption } from './entities/question-option.entity';
 import { QuizAttempt } from './entities/quiz-attempt.entity';
 import { QuizAnswer } from './entities/quiz-answer.entity';
+import { QuizQuestionService } from './quiz-question.service';
+import { QuizAttemptService } from './quiz-attemp.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([
@@ -19,6 +21,10 @@ import { QuizAnswer } from './entities/quiz-answer.entity';
     Course,
   ])],
   controllers: [QuizzesController],
-  providers: [QuizzesService],
+  providers: [
+    QuizzesService,
+    QuizQuestionService,
+    QuizAttemptService,
+  ],
 })
 export class QuizzesModule {}

@@ -7,12 +7,16 @@ import { UserRole } from '../users/entities/user.entity';
 import { CurrentUser, UserPayload } from 'src/auth/decorators/current-user.decorator';
 import { CreateQuestionDto, UpdateQuestionDto } from './dto/create-question.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
-import { QuizAnswer } from './entities/quiz-answer.entity';
-import { SaveProgressDto } from './dto/save-progress.dto';
+import { QuizQuestionService } from './quiz-question.service';
+import { QuizAttemptService } from './quiz-attemp.service';
 
 @Controller()
 export class QuizzesController {
-  constructor(private readonly quizzesService: QuizzesService) { }
+  constructor(
+    private readonly quizzesService: QuizzesService,
+    private readonly quizQuestionService: QuizQuestionService,
+    private readonly quizAttemptsService: QuizAttemptService
+  ) { } 
 
   @Post('courses/:courseId/quizzes')
   @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
@@ -61,7 +65,7 @@ export class QuizzesController {
     @Body() createQuestionDto: CreateQuestionDto,
     @CurrentUser() user: UserPayload,
   ) {
-    return this.quizzesService.addQuestion(quizId, createQuestionDto, user.id, user.role);
+    return this.quizQuestionService.addQuestion(quizId, createQuestionDto, user.id, user.role);
   }
 
   @Patch('questions/:questionId')
@@ -71,7 +75,7 @@ export class QuizzesController {
     @Body() updateQuestionDto: UpdateQuestionDto,
     @CurrentUser() user: UserPayload,
   ) {
-    return this.quizzesService.updateQuestion(questionId, updateQuestionDto, user.id, user.role);
+    return this.quizQuestionService.updateQuestion(questionId, updateQuestionDto, user.id, user.role);
   }
 
   @Delete('questions/:questionId')
@@ -80,7 +84,7 @@ export class QuizzesController {
     @Param('questionId') questionId: string,
     @CurrentUser() user: UserPayload,
   ) {
-    return this.quizzesService.removeQuestion(questionId, user.id, user.role);
+    return this.quizQuestionService.removeQuestion(questionId, user.id, user.role);
   }
 
   // Attempts
@@ -89,7 +93,7 @@ export class QuizzesController {
     @Param('quizId') quizId: string,
     @CurrentUser() student: UserPayload,
   ) {
-    return this.quizzesService.startAttempt(quizId, student.id);
+    return this.quizAttemptsService.startAttempt(quizId, student.id);
   }
 
   @Get('quizzes/:quizId/attempts/in-progress')
@@ -98,7 +102,7 @@ export class QuizzesController {
     @Param('quizId') quizId: string,
     @CurrentUser() user: UserPayload,
   ) {
-    return this.quizzesService.getInProgressAttempt(quizId, user.id);
+    return this.quizAttemptsService.getInProgressAttempt(quizId, user.id);
   }
 
   @Post('attempts/:attemptId/submit')
@@ -107,16 +111,16 @@ export class QuizzesController {
     @Body() submitQuizDto: SubmitQuizDto,
     @CurrentUser('id') studentId: string,
   ) {
-    return this.quizzesService.submitAttempt(attemptId, submitQuizDto, studentId);
+    return this.quizAttemptsService.submitAttempt(attemptId, submitQuizDto, studentId);
   }
 
   @Post('attempts/:attemptId/save-progress')
   async saveProgress(
     @Param('attemptId') attemptId: string,
-    @Body() dto: SaveProgressDto,
+    @Body() submitQuizDto: SubmitQuizDto,
     @CurrentUser('id') studentId: string,
   ) {
-    return this.quizzesService.saveProgress(attemptId, dto.answers, studentId);
+    return this.quizAttemptsService.saveProgress(attemptId, submitQuizDto.answers, studentId);
   }
 
   @Get('quizzes/:quizId/attempts')
@@ -124,8 +128,7 @@ export class QuizzesController {
     @Param('quizId') quizId: string,
     @CurrentUser() user: UserPayload,
   ) {
-    const { id, role } = user;
-    return this.quizzesService.getAttempts(quizId, id, role);
+    return this.quizAttemptsService.getAttempts(quizId, user.id, user.role);
   }
 
   @Get('attempts/:attemptId')
@@ -133,7 +136,7 @@ export class QuizzesController {
     @Param('attemptId') attemptId: string,
     @CurrentUser() user: UserPayload,
   ) {
-    return this.quizzesService.getAttempt(attemptId, user.id, user.role);
+    return this.quizAttemptsService.getAttempt(attemptId, user.id, user.role);
   }
 
   @Get('quizzes/:quizId/all-attempts')
@@ -142,7 +145,7 @@ export class QuizzesController {
     @Param('quizId') quizId: string,
     @CurrentUser() user: UserPayload,
   ) {
-    return this.quizzesService.getAllAttemptsByQuiz(quizId, user.id, user.role);
+    return this.quizAttemptsService.getAllAttemptsByQuiz(quizId, user.id, user.role);
   }
 
   @Get('quizzes/:quizId/attempt-count')
@@ -150,18 +153,17 @@ export class QuizzesController {
     @Param('quizId') quizId: string,
     @CurrentUser('id') studentId: string,
   ) {
-    const count = await this.quizzesService.getAttemptCount(quizId, studentId);
-    return { count };
+    return await this.quizAttemptsService.getAttemptCount(quizId, studentId);
   }
 
-  @Post('quizzes/attempt-counts')
-  async getAttemptCounts(
-    @Body() body: { quizIds: string[] },
-    @CurrentUser('id') studentId: string,
-  ) {
-    const countsMap = await this.quizzesService.getAttemptCountsForQuizzes(body.quizIds, studentId);
-    return Object.fromEntries(countsMap);
-  }
+  // @Post('quizzes/attempt-counts')
+  // async getAttemptCounts(
+  //   @Body() body: { quizIds: string[] },
+  //   @CurrentUser('id') studentId: string,
+  // ) {
+  //   const countsMap = await this.quizAttemptsService.getAttemptCountsForQuizzes(body.quizIds, studentId);
+  //   return Object.fromEntries(countsMap);
+  // }
 
   @Patch('answers/:answerId/grade')
   @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
@@ -170,13 +172,7 @@ export class QuizzesController {
     @Body() body: { points: number; feedback?: string },
     @CurrentUser() user: UserPayload,
   ) {
-    return this.quizzesService.gradeManualAnswer(
-      answerId,
-      body.points,
-      body.feedback || '',
-      user.id,
-      user.role,
-    );
+    return this.quizAttemptsService.gradeManualAnswer(answerId, body.points, body.feedback || '', user.id, user.role,);
   }
 
   @Get('quizzes/:quizId/pending-grading')
@@ -185,6 +181,6 @@ export class QuizzesController {
     @Param('quizId') quizId: string,
     @CurrentUser() user: UserPayload,
   ) {
-    return this.quizzesService.getPendingGradingAttempts(quizId, user.id, user.role);
+    return this.quizAttemptsService.getPendingGradingAttempts(quizId, user.id, user.role);
   }
 }
