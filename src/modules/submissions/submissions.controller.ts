@@ -49,4 +49,19 @@ export class SubmissionsController {
     return this.submissionsService.grade(id, dto, user);
   }
 
+  @Get("assignments/:assignmentId/submissions/me")
+  @UseGuards(JwtAuthGuard)
+  getMySubmissions(
+    @Param("assignmentId") assignmentId: string,
+    @CurrentUser('id') studentId: string,
+  ) {
+    return this.submissionsService.findMySubmissions(studentId, assignmentId);
+  }
+
+  @Get('submissions/:submissionId')
+  findOneSubmission(
+    @Param("submissionId") submissionId: string,
+  ) {
+    return this.submissionsService.findOneSubmission(submissionId);
+  }
 }

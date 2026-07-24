@@ -1,6 +1,7 @@
 import { Assignment } from "src/modules/assignments/entities/assignment.entity";
 import { User } from "src/modules/users/entities/user.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { SubmissionAttachment } from "./submission-attachment.entity";
 
 export enum SubmissionStatus {
     DRAFT = 'draft',
@@ -18,8 +19,8 @@ export class Submission {
     @Column('text', { nullable: true })
     content: string;
 
-    @Column({ type: 'simple-array', nullable: true })
-    attachments: string[]; // URLs de archivos
+    // @Column({ type: 'simple-array', nullable: true })
+    // attachments: string[]; // URLs de archivos
 
     @Column({
         type: 'enum',
@@ -57,6 +58,12 @@ export class Submission {
 
     @Column('text', { nullable: true })
     feedback: string;
+
+    @OneToMany(() => SubmissionAttachment, (attachment) => attachment.submission, {
+        cascade: true,
+        eager: false,
+    })
+    attachmentFiles: SubmissionAttachment[];
 
     @Column({ type: 'timestamptz', nullable: true })
     gradedAt: Date;

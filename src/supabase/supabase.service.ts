@@ -35,7 +35,7 @@ export class SupabaseService {
     }
 
     const sanitizedFileName = this.sanitizeFileName(file.originalname);
-    const path = `${sanitizedPrefix}/${randomUUID()}-${sanitizedFileName}`;
+    const path = `${pathPrefix}/${randomUUID()}-${sanitizedFileName}`;
 
     const { error } = await this.client.storage
       .from(this.bucket)
@@ -75,4 +75,16 @@ export class SupabaseService {
       throw new InternalServerErrorException(`Error deleting file: ${error.message}`);
     }
   }
+
+  async getSignedUrl(path: string, expiresInSeconds = 3600): Promise<string> {
+  const { data, error } = await this.client.storage
+    .from(this.bucket)
+    .createSignedUrl(path, expiresInSeconds);
+
+  if (error) {
+    throw new InternalServerErrorException(`Error generating signed URL: ${error.message}`);
+  }
+
+  return data.signedUrl;
+}
 }

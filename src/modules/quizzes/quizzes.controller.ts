@@ -156,14 +156,14 @@ export class QuizzesController {
     return await this.quizAttemptsService.getAttemptCount(quizId, studentId);
   }
 
-  // @Post('quizzes/attempt-counts')
-  // async getAttemptCounts(
-  //   @Body() body: { quizIds: string[] },
-  //   @CurrentUser('id') studentId: string,
-  // ) {
-  //   const countsMap = await this.quizAttemptsService.getAttemptCountsForQuizzes(body.quizIds, studentId);
-  //   return Object.fromEntries(countsMap);
-  // }
+  @Post('quizzes/attempt-counts')
+  async getAttemptCounts(
+    @Body() body: { quizIds: string[] },
+    @CurrentUser('id') studentId: string,
+  ) {
+    const countsMap = await this.quizAttemptsService.getAttemptCountsForQuizzes(body.quizIds, studentId);
+    return Object.fromEntries(countsMap);
+  }
 
   @Patch('answers/:answerId/grade')
   @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
