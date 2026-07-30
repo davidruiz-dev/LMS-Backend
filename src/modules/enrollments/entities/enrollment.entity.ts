@@ -10,25 +10,25 @@ export enum EnrollmentStatus {
 
 @Entity('enrollments')
 export class Enrollment {
-    @PrimaryGeneratedColumn('uuid')
-    id: string
-    @ManyToOne(() => User, (student) => student.enrollments)
-    @JoinColumn({name: 'userId'})
-    user: User
-    @Column()
-    userId: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string
+  @ManyToOne(() => User, (student) => student.enrollments)
+  @JoinColumn({ name: 'userId' })
+  user: User
+  @Column()
+  userId: string;
 
-    @ManyToOne(() => Course, (course) => course.enrollments)
-    @JoinColumn({name: 'courseId'})
-    course: Course;
-    @Column()
-    courseId: string;
+  @ManyToOne(() => Course, (course) => course.enrollments)
+  @JoinColumn({ name: 'courseId' })
+  course: Course;
+  @Column()
+  courseId: string;
 
-    @Column({ type: 'enum', enum: EnrollmentStatus, default: EnrollmentStatus.ACTIVE })
-    status: EnrollmentStatus;
+  @Column({ type: 'enum', enum: EnrollmentStatus, default: EnrollmentStatus.ACTIVE })
+  status: EnrollmentStatus;
 
-    @CreateDateColumn()
-    createdAt: Date
-    @UpdateDateColumn()
-    updateAt: Date
+  @CreateDateColumn()
+  createdAt: Date
+  @UpdateDateColumn()
+  updateAt: Date
 }

@@ -19,9 +19,6 @@ export class Submission {
     @Column('text', { nullable: true })
     content: string;
 
-    // @Column({ type: 'simple-array', nullable: true })
-    // attachments: string[]; // URLs de archivos
-
     @Column({
         type: 'enum',
         enum: SubmissionStatus,

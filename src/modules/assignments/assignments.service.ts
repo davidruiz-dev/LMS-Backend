@@ -6,7 +6,7 @@ import { Assignment } from 'src/modules/assignments/entities/assignment.entity';
 import { Between, Repository } from 'typeorm';
 import { UserRole } from 'src/modules/users/entities/user.entity';
 import { Course } from 'src/modules/courses/entities/course.entity';
-import { Submission } from 'src/modules/submissions/entities/submission.entity';
+import { Submission, SubmissionStatus } from 'src/modules/submissions/entities/submission.entity';
 
 @Injectable()
 export class AssignmentsService {
@@ -98,30 +98,79 @@ export class AssignmentsService {
     return this.assignmentRepository.save(assignment);
   }
 
+  // async findAll(courseId: string, userId: string, role: UserRole) {
+  //   const course = await this.coursesRepository.findOne({ where: { id: courseId } });
+
+  //   if (!course) {
+  //     throw new NotFoundException('Curso no encontrado');
+  //   }
+
+  //   const isInstructor = course.instructorId === userId || role === UserRole.ADMIN;
+
+  //   const queryBuilder = this.assignmentRepository
+  //     .createQueryBuilder('assignment')
+  //     .where('assignment.courseId = :courseId', { courseId });
+
+  //   // Estudiantes solo ven assignments publicados
+  //   if (!isInstructor) {
+  //     queryBuilder.andWhere('assignment.isPublished = :published', { published: true });
+  //     const now = new Date();
+  //     queryBuilder.andWhere(
+  //       '(assignment.availableFrom IS NULL OR assignment.availableFrom <= :now)',
+  //       { now },
+  //     );
+  //   }
+
+  //   return queryBuilder.orderBy('assignment.dueDate', 'ASC').getMany();
+  // }
   async findAll(courseId: string, userId: string, role: UserRole) {
     const course = await this.coursesRepository.findOne({ where: { id: courseId } });
-
     if (!course) {
-      throw new NotFoundException();
+      throw new NotFoundException('Curso no encontrado');
     }
+    // const canViewAllAssignments =
+    //   await this.canManageCourse(courseId, userId, role);
 
-    const isInstructor = course.instructorId === userId || role === UserRole.ADMIN;
+    const canViewAllAssignments = course.instructorId === userId || role === UserRole.ADMIN;
 
     const queryBuilder = this.assignmentRepository
       .createQueryBuilder('assignment')
-      .where('assignment.courseId = :courseId', { courseId });
+      .where('assignment.courseId = :courseId', {
+        courseId,
+      });
 
-    // Estudiantes solo ven assignments publicados
-    if (!isInstructor) {
-      queryBuilder.andWhere('assignment.isPublished = :published', { published: true });
+    // Estudiantes solo ven assignments publicados y disponibles
+    if (!canViewAllAssignments) {
       const now = new Date();
-      queryBuilder.andWhere(
-        '(assignment.availableFrom IS NULL OR assignment.availableFrom <= :now)',
-        { now },
-      );
+
+      queryBuilder
+        .andWhere('assignment.isPublished = :published', {
+          published: true,
+        })
+        .andWhere(
+          '(assignment.availableFrom IS NULL OR assignment.availableFrom <= :now)',
+          {
+            now,
+          },
+        );
     }
 
-    return queryBuilder.orderBy('assignment.dueDate', 'ASC').getMany();
+    const assignments = await queryBuilder
+      .orderBy('assignment.dueDate', 'ASC')
+      .getMany();
+
+
+    const stats = await this.getStats(
+      assignments.map((assignment) => assignment.id),
+      userId,
+      role,
+    );
+
+
+    return assignments.map((assignment) => ({
+      ...assignment,
+      stats: stats[assignment.id] ?? {},
+    }));
   }
 
   async findUpcoming(courseId: string, userId: string) {
@@ -167,7 +216,7 @@ export class AssignmentsService {
         );
       }
 
-      if (!assignment.isAvailable()) {
+      if (!assignment.isPublished) {
         throw new ForbiddenException(
           'Esta asignación no está disponible en este momento',
         );
@@ -250,9 +299,9 @@ export class AssignmentsService {
     }
 
     // No permitir eliminar si ya hay submissions
-    // if (assignment.submissions && assignment.submissions.length > 0) {
-    //   throw new BadRequestException('Cannot delete assignment with existing submissions');
-    // }
+    if (assignment.submissions && assignment.submissions.length > 0) {
+      throw new BadRequestException('No puedes eliminar esta tarea si tienes entregas');
+    }
 
     await this.assignmentRepository.remove(assignment);
   }
@@ -289,7 +338,7 @@ export class AssignmentsService {
     return await this.assignmentRepository.save(assignment);
   }
 
-  async unpublishAssignment(courseId: string,assignmentId: string): Promise<Assignment> {
+  async unpublishAssignment(courseId: string, assignmentId: string): Promise<Assignment> {
     const assignment = await this.assignmentRepository.findOne({
       where: { id: assignmentId, courseId },
       relations: ['submissions'],
@@ -309,5 +358,106 @@ export class AssignmentsService {
 
     assignment.isPublished = false;
     return await this.assignmentRepository.save(assignment);
+  }
+
+  // stats
+  async getStats(
+    assignmentIds: string[],
+    userId: string,
+    role: UserRole,
+  ) {
+
+    if (!assignmentIds.length) {
+      return {};
+    }
+
+
+    if (
+      role === UserRole.ADMIN ||
+      role === UserRole.INSTRUCTOR
+    ) {
+      return this.getInstructorStats(
+        assignmentIds,
+      );
+    }
+
+
+    return this.getStudentStats(
+      assignmentIds,
+      userId,
+    );
+  }
+
+
+  private async getInstructorStats(
+    assignmentIds: string[],
+  ) {
+
+    const results = await this.submissionsRepository
+      .createQueryBuilder('submission')
+      .select('submission.assignmentId', 'assignmentId')
+      .addSelect(
+        'COUNT(submission.id)',
+        'totalSubmissions',
+      )
+      .addSelect(
+        'AVG(submission.grade)',
+        'averageGrade',
+      )
+      .where(
+        'submission.assignmentId IN (:...assignmentIds)',
+        {
+          assignmentIds,
+        },
+      )
+      .groupBy('submission.assignmentId')
+      .getRawMany();
+
+
+    return results.reduce((acc, item) => {
+
+      acc[item.assignmentId] = {
+        totalSubmissions: Number(item.totalSubmissions),
+        averageGrade: Number(
+          item.averageGrade ?? 0,
+        ),
+      };
+
+      return acc;
+
+    }, {});
+  }
+
+  private async getStudentStats(
+    assignmentIds: string[],
+    userId: string,
+  ) {
+
+    const results = await this.submissionsRepository
+      .createQueryBuilder('submission')
+      .select('submission.assignmentId', 'assignmentId')
+      .addSelect('submission.grade', 'grade',)
+      .addSelect('submission.status', 'status',)
+      .where('submission.assignmentId IN (:...assignmentIds)',
+        { assignmentIds, },
+      )
+      .andWhere('submission.studentId = :userId',
+        { userId, },
+      )
+      .getRawMany();
+
+
+    return results.reduce((acc, item: Submission) => {
+
+      acc[item.assignmentId] = {
+        submitted: true,
+        grade: item.grade,
+        status: item.status,
+      };
+
+      return acc;
+
+    }, {
+    });
   }
 }

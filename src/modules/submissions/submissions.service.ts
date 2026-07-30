@@ -115,6 +115,7 @@ export class SubmissionsService {
 
     submission.grade = dto.grade;
     if (dto.feedback !== undefined) submission.feedback = dto.feedback;
+    submission.status = SubmissionStatus.GRADED;
 
     return this.submissionRepository.save(submission);
   }

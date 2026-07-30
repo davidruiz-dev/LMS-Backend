@@ -13,6 +13,7 @@ import { AssignmentsModule } from 'src/modules/assignments/assignments.module';
 import { AnnouncementsModule } from 'src/modules/announcements/announcements.module';
 import { QuizzesModule } from './modules/quizzes/quizzes.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -40,7 +41,8 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     AssignmentsModule,
     AnnouncementsModule,
     QuizzesModule,
-    SubmissionsModule
+    SubmissionsModule,
+    DashboardModule
   ],
   controllers: [],
   providers: [],
