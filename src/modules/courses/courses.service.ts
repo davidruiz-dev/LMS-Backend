@@ -1,14 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Course } from './entities/course.entity';
+import { Course, CourseStatus } from './entities/course.entity';
 import { ILike, Repository } from 'typeorm';
 import { CoursePagination } from './dto/course-pagination.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { GradeLevel } from '../grade-level/entities/grade-level.entity';
-import { User } from 'src/modules/users/entities/user.entity';
+import { User, UserRole } from 'src/modules/users/entities/user.entity';
 import { paginateResponse } from 'src/common/helpers/pagination-response';
+import { UserPayload } from 'src/auth/decorators/current-user.decorator';
+import { Enrollment, EnrollmentStatus } from 'src/modules/enrollments/entities/enrollment.entity';
 
 @Injectable()
 export class CoursesService {
@@ -19,6 +21,8 @@ export class CoursesService {
     private readonly gradeLevelRepository: Repository<GradeLevel>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Enrollment)
+    private readonly enrollmentRepository: Repository<Enrollment>,
     private cloudinaryService: CloudinaryService,
   ) { }
 
@@ -43,22 +47,20 @@ export class CoursesService {
     return this.courseRepository.save(newCourse);
   }
 
-  async findAll(pagination: CoursePagination) {
-    const { page = 1, limit = 10, orderBy, order, search } = pagination;
-    const skip = (page - 1) * limit;
-    const keyword = search ? `%${search}%` : '%%';
-
-    const [data, total] = await this.courseRepository.findAndCount({
-      where: [
-        { name: ILike(keyword) },
-      ],
-      relations: ['gradeLevel', 'instructor'],
-      take: limit,
-      skip: skip,
-      order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
-    });
-    return paginateResponse({ data, total, page, limit, route: `${process.env.API_BASE_URL}/courses` });
+  // courses.service.ts
+  async findAll(pagination: CoursePagination, user: UserPayload) {
+    switch (user.role) {
+      case UserRole.ADMIN:
+        return this.findAllCourses(pagination);
+      case UserRole.INSTRUCTOR:
+        return this.findCoursesByInstructor(user.id, pagination);
+      case UserRole.STUDENT:
+        return this.findCoursesByEnrollment(user.id, pagination);
+      default:
+        throw new ForbiddenException('Invalid role');
+    }
   }
+
   // async findAll(pagination: CoursePagination) {
   //   const { page = 1, limit = 10, name, orderBy, order } = pagination
   //   const skip = (page - 1) * limit;
@@ -87,13 +89,125 @@ export class CoursesService {
   //   }
   // }
 
+  // findOne(id: string) {
+  //   return this.courseRepository.findOne({
+  //     where: { id },
+  //     relations: ['gradeLevel', 'instructor']
+  //   });
+  // }
 
+  // métodos
+  private async findAllCourses(pagination: CoursePagination) {
+    const { page = 1, limit = 10, orderBy, order, search } = pagination;
+    const skip = (page - 1) * limit;
+    const keyword = search ? `%${search}%` : '%%';
 
-  findOne(id: string) {
-    return this.courseRepository.findOne({
-      where: { id },
-      relations: ['gradeLevel', 'instructor']
+    const [data, total] = await this.courseRepository.findAndCount({
+      where: [{ name: ILike(keyword) }],
+      relations: ['gradeLevel', 'instructor'],
+      take: limit,
+      skip,
+      order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
     });
+
+    return paginateResponse({
+      data,
+      total,
+      page,
+      limit,
+      route: `${process.env.API_BASE_URL}/courses`,
+    });
+  }
+
+  // async findAll(pagination: CoursePagination) {
+  //   const { page = 1, limit = 10, orderBy, order, search } = pagination;
+  //   const skip = (page - 1) * limit;
+  //   const keyword = search ? `%${search}%` : '%%';
+
+  //   const [data, total] = await this.courseRepository.findAndCount({
+  //     where: [
+  //       { name: ILike(keyword) },
+  //     ],
+  //     relations: ['gradeLevel', 'instructor'],
+  //     take: limit,
+  //     skip: skip,
+  //     order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
+  //   });
+  //   return paginateResponse({ data, total, page, limit, route: `${process.env.API_BASE_URL}/courses` });
+  // }
+
+  private async findCoursesByEnrollment(studentId: string, pagination: CoursePagination) {
+    const { page = 1, limit = 10, orderBy, order, search } = pagination;
+    const skip = (page - 1) * limit;
+    const keyword = search ? `%${search}%` : '%%';
+
+    const [data, total] = await this.courseRepository.findAndCount({
+      where: { enrollments: { userId: studentId }, name: ILike(keyword) },
+      relations: ['gradeLevel', 'instructor', 'enrollments'],
+      take: limit,
+      skip,
+      order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
+    });
+
+
+    return paginateResponse({
+      data,
+      total,
+      page,
+      limit,
+      route: `${process.env.API_BASE_URL}/courses`,
+    });
+  }
+
+  async findMyCoursesActive(userId: string, role: UserRole) {
+    if (role !== UserRole.INSTRUCTOR) {
+      throw new Error('Only instructors can access this endpoint');
+    }
+    const courses = await this.courseRepository.find({ where: { instructorId: userId, status: CourseStatus.PUBLISHED } });
+    return courses;
+  }
+
+  private async findCoursesByInstructor(instructorId: string, pagination: CoursePagination) {
+    const { page = 1, limit = 10, orderBy, order, search } = pagination;
+    const skip = (page - 1) * limit;
+    const keyword = search ? `%${search}%` : '%%';
+
+    const [data, total] = await this.courseRepository.findAndCount({
+      where: [
+        {
+          name: ILike(keyword),
+          instructorId,
+        },
+      ],
+      relations: ['gradeLevel', 'instructor'],
+      take: limit,
+      skip,
+      order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
+    });
+
+    return paginateResponse({
+      data,
+      total,
+      page,
+      limit,
+      route: `${process.env.API_BASE_URL}/courses`,
+    });
+  }
+
+
+  async findOne(id: string, userId: string, userRoles: UserRole): Promise<Course> {
+    const course = await this.courseRepository.findOne({
+      where: { id },
+      relations: ['gradeLevel', 'instructor', 'enrollments']
+      //relations: ['gradeLevel','instructor', 'modules', 'assignments', 'enrollments'],
+    });
+
+    if (!course) {
+      throw new NotFoundException(`Course with ID "${id}" not found`);
+    }
+
+    this.checkCourseAccess(course, userId, userRoles);
+    return course;
   }
 
   async update(id: string, updateCourseDto: UpdateCourseDto, imagen?: Express.Multer.File) {
@@ -143,7 +257,94 @@ export class CoursesService {
   }
 
 
-  remove(id: number) {
-    return `This action removes a #${id} course`;
+  async remove(id: string, userId: string, userRole: UserRole): Promise<void> {
+    const course = await this.findOne(id, userId, userRole);
+    if (course.instructorId !== userId && userRole !== UserRole.ADMIN) {
+      throw new ForbiddenException('You do not have permission to delete this course');
+    }
+    await this.courseRepository.remove(course);
+  }
+
+  async publish(id: string, userId: string, userRole: UserRole): Promise<Course> {
+    const course = await this.findOne(id, userId, userRole);
+    if (course.instructorId !== userId && userRole !== UserRole.ADMIN) {
+      throw new ForbiddenException('You do not have permission to publish this course');
+    }
+    course.status = CourseStatus.PUBLISHED;
+    return this.courseRepository.save(course);
+  }
+
+  private checkCourseAccess(course: Course, userId: string, userRole: UserRole): void {
+    if (userRole === UserRole.ADMIN || course.instructorId === userId || course.enrollments.some(e => e.userId === userId)) {
+      return;
+    }
+
+    if (course.enrollments.some(e => e.userId === userId) && course.status !== CourseStatus.PUBLISHED) {
+      throw new ForbiddenException('No tienes acceso a este curso');
+    }
+  }
+
+  async getEnrollmentsByCourseId(courseId: string, currentUser: UserPayload): Promise<Enrollment[]> {
+    // 1. Verificar que el curso exista
+    const course = await this.courseRepository.findOne({
+      where: {
+        id: courseId,
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Curso no encontrado');
+    }
+
+    // 2. Admin puede acceder
+    if (currentUser.role !== UserRole.ADMIN) {
+
+      // 3. Profesor propietario
+      const isTeacher = course.instructorId === currentUser.id;
+
+      // 4. Alumno inscrito
+      const isStudent = await this.enrollmentRepository.exists({
+        where: {
+          course: {
+            id: courseId,
+          },
+          user: {
+            id: currentUser.id,
+          },
+        },
+      });
+
+      if (!isTeacher && !isStudent) {
+        throw new ForbiddenException(
+          'No tienes permisos para ver los compañeros de este curso',
+        );
+      }
+    }
+
+    // 5. Obtener únicamente la información pública
+    const enrollments = await this.enrollmentRepository
+      .createQueryBuilder('enrollment')
+      .innerJoinAndSelect('enrollment.user', 'user')
+      .select([
+        'enrollment.id',
+        'enrollment.createdAt',
+        'enrollment.status',
+        'user.id',
+        'user.firstName',
+        'user.lastName',
+        'user.image',
+        'user.email',
+      ])
+      .where(
+        'enrollment.courseId = :courseId',
+        { courseId },
+      )
+      .orderBy(
+        'user.lastName',
+        'ASC',
+      )
+      .getMany();
+
+    return enrollments;
   }
 }

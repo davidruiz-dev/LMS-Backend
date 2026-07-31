@@ -8,9 +8,18 @@ import { PostsModule } from './modules/posts/posts.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 import { GradeLevelModule } from './modules/grade-level/grade-level.module';
 import { ConfigModule } from '@nestjs/config';
+import { ModulesModule } from 'src/modules/modules/modules.module';
+import { AssignmentsModule } from 'src/modules/assignments/assignments.module';
+import { AnnouncementsModule } from 'src/modules/announcements/announcements.module';
+import { QuizzesModule } from './modules/quizzes/quizzes.module';
+import { SubmissionsModule } from './modules/submissions/submissions.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -28,9 +37,12 @@ import { ConfigModule } from '@nestjs/config';
     PostsModule,
     EnrollmentsModule,
     GradeLevelModule,
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+    ModulesModule,
+    AssignmentsModule,
+    AnnouncementsModule,
+    QuizzesModule,
+    SubmissionsModule,
+    DashboardModule
   ],
   controllers: [],
   providers: [],

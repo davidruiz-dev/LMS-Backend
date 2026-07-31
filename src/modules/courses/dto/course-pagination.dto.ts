@@ -2,13 +2,19 @@ import { IsOptional, IsString } from "class-validator";
 import { PaginationDto } from "src/common/dto/pagination.dto";
 
 export class CoursePagination extends PaginationDto {
+    @IsOptional()
     @IsString()
-    name?: string
+    name?: string;
+
     @IsString()
     @IsOptional()
     orderBy?: string = 'createdAt';
+
     @IsString()
     @IsOptional()
     order?: 'ASC' | 'DESC' = 'ASC';
-    search: string;
+    
+    @IsOptional()
+    @IsString()
+    search?: string;
 }

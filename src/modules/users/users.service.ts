@@ -42,8 +42,8 @@ export class UsersService {
 
     const [data, total] = await this.userRepository.findAndCount({
       where: [
-        { email: ILike(keyword) },
-        { lastName: ILike(keyword) },
+        { email: ILike(keyword), role: Not(UserRole.ADMIN) },
+        { lastName: ILike(keyword), role: Not(UserRole.ADMIN) },
       ],
       take: limit,
       skip: skip,

@@ -8,19 +8,21 @@ async function bootstrap() {
 
   const usersService = app.get(UsersService);
 
-  const existingAdmin = await usersService.findOneByEmail('admin@example.com');
+  const email = process.env.ADMIN_EMAIL || 'admin@example.com'
+  const password = process.env.ADMIN_PASSWORD || 'admin'
+  const existingAdmin = await usersService.findOneByEmail(email);
 
   if (!existingAdmin) {
     await usersService.create({
       firstName: 'Admin',
       lastName: 'Admin',
-      email: 'admin@example.com',
-      password: 'securePassword123', // Asegúrate de hashear si es necesario
+      email: email,
+      password: password, 
       role: UserRole.ADMIN,
     });
-    console.log('✅ Admin user created');
+    console.log('Admin user created');
   } else {
-    console.log('ℹ️ Admin already exists');
+    console.log('Admin already exists');
   }
 
   await app.close();

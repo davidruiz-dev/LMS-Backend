@@ -2,9 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEnrollmentDto } from './dto/create-enrollment.dto';
 import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Enrollment } from './entities/enrollment.entity';
+import { Enrollment, EnrollmentStatus } from './entities/enrollment.entity';
 import { Repository } from 'typeorm';
-import { Course } from 'src/modules/courses/entities/course.entity';
+import { Course, CourseStatus } from 'src/modules/courses/entities/course.entity';
 import { User } from 'src/modules/users/entities/user.entity';
 
 @Injectable()
@@ -16,16 +16,17 @@ export class EnrollmentsService {
   @InjectRepository(User)
   private readonly userRepository: Repository<User>
 
-  async create(createEnrollmentDto: CreateEnrollmentDto) {
+  async create(courseId: string, createEnrollmentDto: CreateEnrollmentDto) {
     const enrollmentExists = await this.enrollmentRepository.findOne({
-      where: { user: { id: createEnrollmentDto.userId }, course: { id: createEnrollmentDto.courseId}},
+      where: { user: { id: createEnrollmentDto.userId }, course: { id: courseId}},
       relations: ['course', 'user']
     })
     if( enrollmentExists ){
       throw new Error('Ya existe una matricula')
     }
-    const course = await this.courseRepository.findOne({where: {id: createEnrollmentDto.courseId}});
+    const course = await this.courseRepository.findOne({where: {id: courseId}});
     if (!course) throw new NotFoundException('Course not found');
+    if (course.status !== CourseStatus.PUBLISHED) throw new NotFoundException('Cannot enroll in an unpublished course');
     const user = await this.userRepository.findOne({where: {id: createEnrollmentDto.userId}});
     if (!user) throw new NotFoundException('user not found');
 
@@ -36,8 +37,25 @@ export class EnrollmentsService {
     return await this.enrollmentRepository.save(enrollment);
   }
 
-  findAll() {
-    return `This action returns all enrollments`;
+
+  async getMyEnrollments(userId: string){
+    return await this.enrollmentRepository.find({
+      where: { user: { id: userId } },
+      relations: ['user', 'course', 'course.gradeLevel', 'course.instructor']
+    })
+  }
+
+  async enrollmentActiveMe(userId: string) {
+    const enrollment = await this.enrollmentRepository.findOne({
+      where: { user: { id: userId }, status: EnrollmentStatus.ACTIVE },
+      relations: ['user', 'course', 'course.gradeLevel', 'course.instructor']
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException('No se encontró una matrícula activa para este usuario en este curso.');
+    }
+
+    return enrollment.course;
   }
 
   async findAllEnrolledCoursesByUser(userId: string){
@@ -50,7 +68,7 @@ export class EnrollmentsService {
 
   async findEnrolledActiveCoursesByUser(userId: string){
     const enrollments = await this.enrollmentRepository.find({
-      where: { user: { id: userId} },
+      where: { user: { id: userId }, status: EnrollmentStatus.ACTIVE, course: { status: CourseStatus.PUBLISHED}},
       relations: ['user', 'course', 'course.gradeLevel', 'course.instructor']
     })
     return enrollments.map(enrollment => enrollment.course)
