@@ -42,7 +42,7 @@ export class CoursesController {
 
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: UserPayload,) {
-    return this.coursesService.findOne(id, user.id, user.role);
+    return this.coursesService.findOneWithStats(id, user.id, user.role);
   }
 
   @Patch(':id')

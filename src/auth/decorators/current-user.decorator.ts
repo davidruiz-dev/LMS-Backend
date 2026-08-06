@@ -3,8 +3,11 @@ import { UserRole } from 'src/modules/users/entities/user.entity';
 
 export interface UserPayload {
   id: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: UserRole;
+  avatarUrl: string;
 }
 
 export const CurrentUser = createParamDecorator(

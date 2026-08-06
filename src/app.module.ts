@@ -14,6 +14,7 @@ import { AnnouncementsModule } from 'src/modules/announcements/announcements.mod
 import { QuizzesModule } from './modules/quizzes/quizzes.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ProfileModule } from './modules/profile/profile.module';
 
 @Module({
   imports: [
@@ -42,7 +43,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     AnnouncementsModule,
     QuizzesModule,
     SubmissionsModule,
-    DashboardModule
+    DashboardModule,
+    ProfileModule,
   ],
   controllers: [],
   providers: [],

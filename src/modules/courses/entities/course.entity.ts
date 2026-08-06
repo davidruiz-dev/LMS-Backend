@@ -3,7 +3,7 @@ import { Enrollment } from "src/modules/enrollments/entities/enrollment.entity";
 import { GradeLevel } from "src/modules/grade-level/entities/grade-level.entity";
 import { Module } from "src/modules/modules/entities/module.entity";
 import { User } from "src/modules/users/entities/user.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 export enum CourseStatus {
   DRAFT = 'draft',
@@ -53,7 +53,9 @@ export class Course {
     
     // timestamps
     @CreateDateColumn()
-    createdAt: Date
+    createdAt: Date;
     @UpdateDateColumn()
-    updateAt: Date
+    updateAt: Date;
+    @DeleteDateColumn()
+    deletedAt: Date;
 }

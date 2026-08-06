@@ -11,6 +11,9 @@ import { User, UserRole } from 'src/modules/users/entities/user.entity';
 import { paginateResponse } from 'src/common/helpers/pagination-response';
 import { UserPayload } from 'src/auth/decorators/current-user.decorator';
 import { Enrollment, EnrollmentStatus } from 'src/modules/enrollments/entities/enrollment.entity';
+import { CourseDetailDto } from './dto/course-detail.dto';
+import { plainToInstance } from 'class-transformer';
+import { checkCourseAccess } from './utils/checkCourseAccess';
 
 @Injectable()
 export class CoursesService {
@@ -206,8 +209,36 @@ export class CoursesService {
       throw new NotFoundException(`Course with ID "${id}" not found`);
     }
 
-    this.checkCourseAccess(course, userId, userRoles);
+    checkCourseAccess(course, userId, userRoles);
     return course;
+  }
+
+  async findOneWithStats(courseId: string, userId: string, userRole: UserRole): Promise<CourseDetailDto> {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { id: courseId },
+      relations: ['enrollments', 'instructor']
+    });
+    checkCourseAccess(course, userId, userRole);
+
+    const courseStat = await this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoin('course.assignments', 'assignment')
+      .leftJoin('course.modules', 'module')
+      .leftJoin('course.enrollments', 'enrollment')
+      .select([
+        'COUNT(DISTINCT assignment.id) AS "assignmentsCount"',
+        'COUNT(DISTINCT module.id) AS "modulesCount"',
+        'COUNT(DISTINCT enrollment.id) AS "enrollmentsCount"',
+      ])
+      .where('course.id = :courseId', { courseId })
+      .getRawOne();
+
+    return {
+      ...course,
+      assignmentsCount: Number(courseStat?.assignmentsCount ?? 0),
+      modulesCount: Number(courseStat?.modulesCount ?? 0),
+      enrollmentsCount: Number(courseStat?.enrollmentsCount ?? 0),
+    };
   }
 
   async update(id: string, updateCourseDto: UpdateCourseDto, imagen?: Express.Multer.File) {
@@ -262,7 +293,7 @@ export class CoursesService {
     if (course.instructorId !== userId && userRole !== UserRole.ADMIN) {
       throw new ForbiddenException('You do not have permission to delete this course');
     }
-    await this.courseRepository.remove(course);
+    await this.courseRepository.softRemove(course);
   }
 
   async publish(id: string, userId: string, userRole: UserRole): Promise<Course> {
@@ -274,15 +305,7 @@ export class CoursesService {
     return this.courseRepository.save(course);
   }
 
-  private checkCourseAccess(course: Course, userId: string, userRole: UserRole): void {
-    if (userRole === UserRole.ADMIN || course.instructorId === userId || course.enrollments.some(e => e.userId === userId)) {
-      return;
-    }
 
-    if (course.enrollments.some(e => e.userId === userId) && course.status !== CourseStatus.PUBLISHED) {
-      throw new ForbiddenException('No tienes acceso a este curso');
-    }
-  }
 
   async getEnrollmentsByCourseId(courseId: string, currentUser: UserPayload): Promise<Enrollment[]> {
     // 1. Verificar que el curso exista
@@ -332,7 +355,7 @@ export class CoursesService {
         'user.id',
         'user.firstName',
         'user.lastName',
-        'user.image',
+        'user.avatarUrl',
         'user.email',
       ])
       .where(
