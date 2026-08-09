@@ -6,7 +6,6 @@ import { AuthModule } from './auth/auth.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
-import { GradeLevelModule } from './modules/grade-level/grade-level.module';
 import { ConfigModule } from '@nestjs/config';
 import { ModulesModule } from 'src/modules/modules/modules.module';
 import { AssignmentsModule } from 'src/modules/assignments/assignments.module';
@@ -37,7 +36,6 @@ import { ProfileModule } from './modules/profile/profile.module';
     CommentsModule,
     PostsModule,
     EnrollmentsModule,
-    GradeLevelModule,
     ModulesModule,
     AssignmentsModule,
     AnnouncementsModule,

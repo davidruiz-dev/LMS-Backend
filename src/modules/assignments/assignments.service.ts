@@ -201,7 +201,6 @@ export class AssignmentsService {
       return {
         id: a.id,
         name: a.name,
-        type: a.type,
         dueDate: a.dueDate,
         maxPoints: a.maxPoints,
         isAvailable: a.isAvailable(),
@@ -244,7 +243,6 @@ export class AssignmentsService {
       .where('a.courseId = :courseId', { courseId })
       .select('a.id', 'id')
       .addSelect('a.name', 'name')
-      .addSelect('a.type', 'type')
       .addSelect('a.dueDate', 'dueDate')
       .addSelect('a.maxPoints', 'maxPoints')
       .addSelect('a.courseId', 'courseId')

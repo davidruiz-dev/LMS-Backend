@@ -6,7 +6,6 @@ import { Course, CourseStatus } from './entities/course.entity';
 import { ILike, Repository } from 'typeorm';
 import { CoursePagination } from './dto/course-pagination.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { GradeLevel } from '../grade-level/entities/grade-level.entity';
 import { User, UserRole } from 'src/modules/users/entities/user.entity';
 import { paginateResponse } from 'src/common/helpers/pagination-response';
 import { UserPayload } from 'src/auth/decorators/current-user.decorator';
@@ -20,8 +19,6 @@ export class CoursesService {
   constructor(
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
-    @InjectRepository(GradeLevel)
-    private readonly gradeLevelRepository: Repository<GradeLevel>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Enrollment)
@@ -31,18 +28,15 @@ export class CoursesService {
 
   async create(createCourseDto: CreateCourseDto, imagen: Express.Multer.File) {
     const newCourse = this.courseRepository.create(createCourseDto);
-    const grade = await this.gradeLevelRepository.findOneBy({ id: createCourseDto.gradeLevelId })
-    if (!grade) throw new Error('grade level not found');
     // instructor
     const instructor = await this.userRepository.findOneBy({ id: createCourseDto.instructorId });
     if (!instructor) throw new Error('instructor not found');
 
-    newCourse.gradeLevel = grade;
     newCourse.instructor = instructor;
     if (imagen) {
       const cloudinaryResponse = await this.cloudinaryService.uploadImage(
         imagen,
-        `cursos/${grade.name}`
+        `cursos/${createCourseDto.name}`
       );
       newCourse.imageUrl = cloudinaryResponse.secure_url;
       newCourse.imagePublicId = cloudinaryResponse.public_id;
@@ -68,8 +62,7 @@ export class CoursesService {
   //   const { page = 1, limit = 10, name, orderBy, order } = pagination
   //   const skip = (page - 1) * limit;
   //   const queryBuilder = this.courseRepository.createQueryBuilder('course')
-  //     .leftJoinAndSelect('course.gradeLevel', 'gradeLevel')
-  //     .withDeleted();
+  //     .leftJoinAndSelect('course.gradeLevel',   //     .withDeleted();
   //   if (name) queryBuilder.andWhere('course.name ILIKE :name', {
   //     name: `%${name}%`
   //   })
@@ -95,7 +88,7 @@ export class CoursesService {
   // findOne(id: string) {
   //   return this.courseRepository.findOne({
   //     where: { id },
-  //     relations: ['gradeLevel', 'instructor']
+  //     relations: ['instructor']
   //   });
   // }
 
@@ -107,7 +100,7 @@ export class CoursesService {
 
     const [data, total] = await this.courseRepository.findAndCount({
       where: [{ name: ILike(keyword) }],
-      relations: ['gradeLevel', 'instructor'],
+      relations: ['instructor'],
       take: limit,
       skip,
       order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
@@ -131,7 +124,7 @@ export class CoursesService {
   //     where: [
   //       { name: ILike(keyword) },
   //     ],
-  //     relations: ['gradeLevel', 'instructor'],
+  //     relations: ['instructor'],
   //     take: limit,
   //     skip: skip,
   //     order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
@@ -146,7 +139,7 @@ export class CoursesService {
 
     const [data, total] = await this.courseRepository.findAndCount({
       where: { enrollments: { userId: studentId }, name: ILike(keyword) },
-      relations: ['gradeLevel', 'instructor', 'enrollments'],
+      relations: ['instructor', 'enrollments'],
       take: limit,
       skip,
       order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
@@ -182,7 +175,7 @@ export class CoursesService {
           instructorId,
         },
       ],
-      relations: ['gradeLevel', 'instructor'],
+      relations: ['instructor'],
       take: limit,
       skip,
       order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
@@ -201,8 +194,8 @@ export class CoursesService {
   async findOne(id: string, userId: string, userRoles: UserRole): Promise<Course> {
     const course = await this.courseRepository.findOne({
       where: { id },
-      relations: ['gradeLevel', 'instructor', 'enrollments']
-      //relations: ['gradeLevel','instructor', 'modules', 'assignments', 'enrollments'],
+      relations: ['instructor', 'enrollments']
+      //relations: [instructor', 'modules', 'assignments', 'enrollments'],
     });
 
     if (!course) {
@@ -244,7 +237,7 @@ export class CoursesService {
   async update(id: string, updateCourseDto: UpdateCourseDto, imagen?: Express.Multer.File) {
     const course = await this.courseRepository.findOne({
       where: { id },
-      relations: ['gradeLevel', 'instructor'],
+      relations: ['instructor'],
     });
 
     if (!course) {
@@ -253,13 +246,6 @@ export class CoursesService {
 
     // Actualizar campos simples del DTO
     Object.assign(course, updateCourseDto);
-
-    // Actualizar gradeLevel si cambia
-    if (updateCourseDto.gradeLevelId && updateCourseDto.gradeLevelId !== course.gradeLevel?.id) {
-      const newGrade = await this.gradeLevelRepository.findOneBy({ id: updateCourseDto.gradeLevelId });
-      if (!newGrade) throw new Error('Grade level not found');
-      course.gradeLevel = newGrade;
-    }
 
     // Actualizar instructor si cambia
     if (updateCourseDto.instructorId && updateCourseDto.instructorId !== course.instructor?.id) {
@@ -277,7 +263,7 @@ export class CoursesService {
 
       const cloudinaryResponse = await this.cloudinaryService.uploadImage(
         imagen,
-        `cursos/${course.gradeLevel.name}`
+        `cursos/${course.name}`
       );
 
       course.imageUrl = cloudinaryResponse.secure_url;

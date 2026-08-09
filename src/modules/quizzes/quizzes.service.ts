@@ -52,6 +52,7 @@ export class QuizzesService {
         'quiz.dueDate AS "dueDate"',
         'quiz.timeLimit AS "timeLimit"',
         'quiz.published AS published',
+        'quiz.createdAt AS "createdAt"',
         'COUNT(DISTINCT question.id) AS "questionCount"',
       ])
       .where('quiz.courseId = :courseId', { courseId })

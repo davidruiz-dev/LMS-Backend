@@ -8,6 +8,7 @@ import { CurrentUser, UserPayload } from 'src/auth/decorators/current-user.decor
 import { ReorderModulesDto } from 'src/modules/modules/dto/reorder-modules.dto';
 import { CreateModuleItemDto } from 'src/modules/modules/dto/create-module-item.dto';
 import { ReorderModuleItemsDto } from 'src/modules/modules/dto/reorder-module-items.dto';
+import { UpdateModuleItemDto } from './dto/update-module-item.dto';
 
 @Controller('courses/:courseId/modules')
 export class ModulesController {
@@ -96,6 +97,18 @@ export class ModulesController {
     @CurrentUser() user: UserPayload,
   ){
     return this.modulesService.removeItem(courseId, moduleId, id, user.id, user.role)
+  }
+
+  @Patch(':moduleId/items/:moduleItemId')
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
+  async updateItem(
+    @Param('courseId') courseId: string,
+    @Param('moduleId') moduleId: string,
+    @Param('moduleItemId') id: string,
+    @Body() updateModuleDto: UpdateModuleItemDto,
+    @CurrentUser() user: UserPayload,
+  ){
+    return this.modulesService.updateItem(courseId, moduleId, id, updateModuleDto, user.id, user.role)
   }
 
   @Post(':moduleId/items/reorder')

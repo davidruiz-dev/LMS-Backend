@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateModuleDto } from './dto/create-module.dto';
 import { UpdateModuleDto } from './dto/update-module.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +11,7 @@ import { ModuleItem } from 'src/modules/modules/entities/module-item.entity';
 import { CreateModuleItemDto } from 'src/modules/modules/dto/create-module-item.dto';
 import { ReorderModuleItemsDto } from 'src/modules/modules/dto/reorder-module-items.dto';
 import { UpdateModuleItemDto } from 'src/modules/modules/dto/update-module-item.dto';
+import { assertCourseManager } from '../quizzes/utils/quiz-permissions';
 
 @Injectable()
 export class ModulesService {
@@ -23,16 +24,9 @@ export class ModulesService {
     private coursesRepository: Repository<Course>,
   ) { }
 
-  async create(courseId: string, createModuleDto: CreateModuleDto, userId: string, userRoles: UserRole): Promise<Module> {
-    const course = await this.coursesRepository.findOne({ where: { id: courseId } });
-
-    if (!course) {
-      throw new NotFoundException('Course not found');
-    }
-
-    if (course.instructorId !== userId && userRoles !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to create modules in this course');
-    }
+  async create(courseId: string, createModuleDto: CreateModuleDto, userId: string, userRole: UserRole): Promise<Module> {
+    const course = await this.coursesRepository.findOneOrFail({ where: { id: courseId } });
+    assertCourseManager(course, userId, userRole);
 
     // Si no se especifica posición, obtener la última
     if (createModuleDto.position === undefined) {
@@ -64,56 +58,39 @@ export class ModulesService {
     });
 
     if (!module) {
-      throw new NotFoundException(`Module not found`);
+      throw new NotFoundException(`Modulo no encontrado`);
     }
 
     return module;
   }
 
-  async update(id: string, updateModuleDto: UpdateModuleDto, userId: string, role: UserRole): Promise<Module> {
-    const module = await this.modulesRepository.findOneBy({id})
-    if (!module) {
-      throw new NotFoundException(`Module with ID "${id}" not found`);
-    }
-    const course = await this.coursesRepository.findOne({ where: { id: module.courseId } });
-
-    if (course?.instructorId !== userId && role !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to update this module');
-    }
-
+  async update(id: string, updateModuleDto: UpdateModuleDto, userId: string, userRole: UserRole): Promise<Module> {
+    const module = await this.modulesRepository.findOneByOrFail({id})
+    const course = await this.coursesRepository.findOneOrFail({ where: { id: module.courseId } });
+    assertCourseManager(course, userId, userRole);
     Object.assign(module, updateModuleDto);
     return this.modulesRepository.save(module);
   }
 
-  async remove(courseId: string, moduleId: string, userId: string, userRoles: UserRole): Promise<void> {
+  async remove(courseId: string, moduleId: string, userId: string, userRole: UserRole): Promise<void> {
     const module = await this.findOne(courseId, moduleId);
-    const course = await this.coursesRepository.findOne({ where: { id: courseId } });
-    if (course?.instructorId !== userId && userRoles !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to delete this module');
-    }
+    const course = await this.coursesRepository.findOneOrFail({ where: { id: courseId } });
+    assertCourseManager(course, userId, userRole);
     await this.modulesRepository.remove(module);
   }
 
   async reorderModules(courseId: string, reorderDto: ReorderModulesDto, userId: string, userRole: UserRole): Promise<Module[]> {
-    const course = await this.coursesRepository.findOne({ where: { id: courseId } });
-
-    if (!course) {
-      throw new NotFoundException(`Course not found`);
-    }
-
-    if (course.instructorId !== userId && userRole !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to reorder modules');
-    }
-
+    const course = await this.coursesRepository.findOneOrFail({ where: { id: courseId } });
+    assertCourseManager(course, userId, userRole);
     // Verificar que todos los módulos pertenezcan al curso
     const modules = await this.modulesRepository.findByIds(reorderDto.moduleIds);
     
     if (modules.length !== reorderDto.moduleIds.length) {
-      throw new BadRequestException('Some modules were not found');
+      throw new BadRequestException('No se encontró algunos módulos');
     }
 
     if (modules.some(module => module.courseId !== courseId)) {
-      throw new BadRequestException('All modules must belong to the same course');
+      throw new BadRequestException('Todos los módulos deben pertenecer al curso');
     }
 
     // Actualizar posiciones
@@ -127,13 +104,10 @@ export class ModulesService {
   }
 
   // Items
-  async createItem(courseId: string, moduleId: string, createItemDto: CreateModuleItemDto, userId: string, userRoles: UserRole): Promise<ModuleItem> {
+  async createItem(courseId: string, moduleId: string, createItemDto: CreateModuleItemDto, userId: string, userRole: UserRole): Promise<ModuleItem> {
     const module = await this.findOne(courseId, moduleId);
-    const course = await this.coursesRepository.findOne({ where: { id: module.courseId } });
-
-    if (course?.instructorId !== userId && userRoles !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to create items in this module');
-    }
+    const course = await this.coursesRepository.findOneOrFail({ where: { id: module.courseId } });
+    assertCourseManager(course, userId, userRole)
 
     // Si no se especifica posición, obtener la última
     if (createItemDto.position === undefined) {
@@ -167,54 +141,42 @@ export class ModulesService {
     });
 
     if (!item) {
-      throw new NotFoundException(`Module item not found`);
+      throw new NotFoundException(`Item del módulo no encontrado`);
     }
 
     return item;
   }
 
-  async updateItem(courseId: string, moduleId: string, id: string, updateItemDto: UpdateModuleItemDto, userId: string, userRoles: UserRole): Promise<ModuleItem> {
+  async updateItem(courseId: string, moduleId: string, id: string, updateItemDto: UpdateModuleItemDto, userId: string, userRole: UserRole): Promise<ModuleItem> {
     const item = await this.findOneItem(courseId,moduleId, id);
-    const course = await this.coursesRepository.findOne({ where: { id: item.module.courseId } });
-
-    if (course?.instructorId !== userId && userRoles !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to update this item');
-    }
-
+    const course = await this.coursesRepository.findOneOrFail({ where: { id: item.module.courseId } });
+    assertCourseManager(course, userId, userRole)
     Object.assign(item, updateItemDto);
     return this.moduleItemsRepository.save(item);
   }
 
   async removeItem(courseId: string, moduleId: string, id: string, userId: string, userRole: UserRole): Promise<void> {
     const item = await this.findOneItem(courseId, moduleId, id);
-    const course = await this.coursesRepository.findOne({ where: { id: courseId } });
-
-    if (course?.instructorId !== userId && userRole !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to delete this item');
-    }
-
+    const course = await this.coursesRepository.findOneOrFail({ where: { id: courseId } });
+    assertCourseManager(course, userId, userRole)
     await this.moduleItemsRepository.remove(item);
   }
 
-  async reorderItems(courseId: string, moduleId: string, reorderDto: ReorderModuleItemsDto, userId: string, userRoles: UserRole): Promise<ModuleItem[]> {
+  async reorderItems(courseId: string, moduleId: string, reorderDto: ReorderModuleItemsDto, userId: string, userRole: UserRole): Promise<ModuleItem[]> {
     const module = await this.findOne(courseId, moduleId);
-    const course = await this.coursesRepository.findOne({ 
+    const course = await this.coursesRepository.findOneOrFail({ 
       where: { id: module.courseId },
     });
-
-    if (course?.instructorId !== userId && userRoles !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to reorder items');
-    }
-
+    assertCourseManager(course, userId, userRole)
     // Verificar que todos los items pertenezcan al módulo
     const items = await this.moduleItemsRepository.findByIds(reorderDto.itemIds);
     
     if (items.length !== reorderDto.itemIds.length) {
-      throw new BadRequestException('Some items were not found');
+      throw new BadRequestException('Algunos items no se encontraron');
     }
 
     if (items.some(item => item.moduleId !== moduleId)) {
-      throw new BadRequestException('All items must belong to the same module');
+      throw new BadRequestException('Todos los items deben pertenecer al módulo');
     }
 
     // Actualizar posiciones

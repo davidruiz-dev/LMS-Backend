@@ -1,103 +1,192 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend desarrollado con NestJS y TypeScript.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Requirements
 
-## Description
+Antes de comenzar, asegúrate de tener instalado:
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+* Node.js
+* npm
+* Una cuenta de Supabase
+* Una cuenta de Cloudinary
 
 ## Project setup
 
-```bash
-$ npm install
-```
-
-## Compile and run the project
+Clona el repositorio e instala las dependencias:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+git clone <repository-url>
+cd <project-folder>
+npm install
 ```
 
-## Run tests
+## Environment variables
+
+El proyecto utiliza variables de entorno para configurar servicios externos y proteger información sensible.
+
+### 1. Create the environment file
+
+Copia el archivo `.env.example`:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+cp .env.example .env
 ```
+
+### 2. Configure the variables
+
+Completa el archivo `.env` con tus propias credenciales:
+
+```env
+# JWT
+JWT_SECRET=
+JWT_EXPIRES_IN=7d
+
+# Supabase
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+```
+
+### JWT
+
+`JWT_SECRET` se utiliza para firmar los tokens de autenticación.
+
+Puedes generar un secreto aleatorio con:
+
+```bash
+openssl rand -base64 32
+```
+
+Por ejemplo:
+
+```env
+JWT_SECRET=tu_secreto_generado
+JWT_EXPIRES_IN=7d
+```
+
+No utilices el `JWT_SECRET` de otra instalación del proyecto.
+
+### Supabase
+
+Necesitas crear un proyecto en Supabase y obtener las credenciales correspondientes.
+
+* `SUPABASE_URL`: URL de tu proyecto.
+* `SUPABASE_ANON_KEY`: clave pública del proyecto.
+* `SUPABASE_SERVICE_ROLE_KEY`: clave con privilegios administrativos. **Nunca debe exponerse públicamente.**
+
+Si el proyecto incluye migraciones o seeders, ejecútalos según las instrucciones correspondientes.
+
+### Cloudinary
+
+Crea una cuenta de Cloudinary y configura:
+
+```env
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+```
+
+`CLOUDINARY_API_SECRET` es una credencial privada y no debe subirse al repositorio.
+
+> **Important:** Never commit your `.env` file or expose your secrets publicly.
+
+## Compile and run
+
+### Development
+
+```bash
+npm run start
+```
+
+### Watch mode
+
+```bash
+npm run start:dev
+```
+
+### Production
+
+```bash
+npm run start:prod
+```
+
+## Seeders
+
+Para ejecutar los seeders:
+
+```bash
+npm run seed
+```
+
+Asegúrate de configurar correctamente las variables de entorno antes de ejecutar este comando.
+
+## Tests
+
+### Unit tests
+
+```bash
+npm run test
+```
+
+### End-to-end tests
+
+```bash
+npm run test:e2e
+```
+
+### Test coverage
+
+```bash
+npm run test:cov
+```
+
+## Project structure
+
+La estructura principal del proyecto sigue la arquitectura de NestJS:
+
+```text
+src/
+├── modules/
+├── common/
+├── config/
+├── ...
+```
+
+La estructura exacta puede variar según los módulos implementados en el proyecto.
+
+## Security
+
+Nunca subas credenciales reales al repositorio.
+
+El archivo `.env` debe estar incluido en `.gitignore`:
+
+```gitignore
+.env
+.env.local
+.env.production
+```
+
+El repositorio debe contener únicamente `.env.example`, que sirve como plantilla para configurar una nueva instalación.
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Para desplegar la aplicación en producción, configura las mismas variables de entorno utilizadas localmente en el proveedor de hosting.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+**No subas el archivo `.env` al servidor mediante Git.** Configura las variables de entorno directamente en la plataforma de deployment.
 
-```bash
-$ npm install -g mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Para más información sobre deployment en NestJS, consulta la documentación oficial de NestJS.
 
 ## Resources
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+* NestJS Documentation
+* NestJS Deployment Documentation
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-
-
-## seeders
-npm run seed
+This project is licensed under the MIT License.

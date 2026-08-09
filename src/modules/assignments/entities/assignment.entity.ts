@@ -2,14 +2,6 @@ import { Course } from "src/modules/courses/entities/course.entity";
 import { Submission } from "src/modules/submissions/entities/submission.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
-export enum AssignmentType {
-  ASSIGNMENT = 'assignment',     // ← Tarea tradicional (subir archivo/texto)
-  QUIZ = 'quiz',                 // ← Examen/Cuestionario con preguntas
-  DISCUSSION = 'discussion',     // ← Foro de discusión evaluado
-  EXTERNAL_TOOL = 'external_tool', // ← LTI/Herramienta externa
-  NOT_GRADED = 'not_graded',     // ← Actividad no calificada
-  ATTENDANCE = 'attendance'      // ← Asistencia
-}
 
 @Entity('assignments')
 export class Assignment {
@@ -25,8 +17,7 @@ export class Assignment {
   @Column({ nullable: true })
   instructions: string;
 
-  @Column({ type: 'enum', enum: AssignmentType, default: AssignmentType.ASSIGNMENT })
-  type: AssignmentType;
+  
 
   @Column({ type: 'decimal', precision: 5, scale: 2 })
   maxPoints: number;

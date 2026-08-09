@@ -211,7 +211,6 @@ export function getUpcomingDeadlines(assignments: Assignment[], submissions: Sub
                 title: a.name,
                 courseId: a.courseId,
                 dueDate: a.dueDate,
-                type: a.type,
                 priority: this.getPriority(a.dueDate),
                 attemptsUsed: attempts, // Información útil: intentos usados
                 maxAttempts: a.maxAttempts,
