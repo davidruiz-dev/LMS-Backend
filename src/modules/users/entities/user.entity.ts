@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Exclude } from 'class-transformer';
 import { Enrollment } from "src/modules/enrollments/entities/enrollment.entity";
 import { Course } from "src/modules/courses/entities/course.entity";
@@ -29,8 +29,14 @@ export class User {
     @Column()
     email: string
 
-    @Column({nullable: true})
-    image: string
+    @Column({ nullable: true })
+    avatarUrl: string;
+
+    @Column({ nullable: true })
+    avatarPublicId: string;
+
+    @Column({ nullable: true, type: 'text' })
+    biography: string;
 
     @Exclude()
     @Column()
@@ -39,7 +45,7 @@ export class User {
     // @Column({nullable: true})
     // dni: string
 
-    @Column({type: 'enum', enum: UserRole, default: UserRole.STUDENT})
+    @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
     role: UserRole;
 
     @OneToMany(() => Enrollment, (enrollment) => enrollment.user)

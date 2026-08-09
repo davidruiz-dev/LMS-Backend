@@ -29,8 +29,11 @@ export class QuizzesController {
   }
 
   @Get('courses/:courseId/quizzes')
-  async findAll(@Param('courseId') courseId: string) {
-    return this.quizzesService.findAllByCourse(courseId);
+  async findAll(
+    @Param('courseId') courseId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.quizzesService.findAllByCourseWithStats(courseId, user.id, user.role);
   }
 
   @Get('quizzes/:id')

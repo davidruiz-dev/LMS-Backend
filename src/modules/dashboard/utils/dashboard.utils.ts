@@ -3,7 +3,7 @@ import { Enrollment } from "src/modules/enrollments/entities/enrollment.entity";
 import { Module } from "src/modules/modules/entities/module.entity";
 import { Submission, SubmissionStatus } from "src/modules/submissions/entities/submission.entity";
 
-export function getLatestSubmissionsPerAssignment(submissions: Submission[]): Map<string, Submission> {
+function getLatestSubmissionsPerAssignment(submissions: Submission[]): Map<string, Submission> {
     const map = new Map<string, Submission>();
 
     // Orden de prioridad de estados
@@ -91,24 +91,14 @@ export function calculateStats(assignments: Assignment[], submissions: Submissio
     };
 }
 
-/**
- * Obtiene la submission más relevante por assignment
- * Prioridad: GRADED > SUBMITTED > RESUBMITTED > DRAFT
- * En caso de empate, la más reciente
- */
-
-
-/**
- * Construye datos del curso considerando múltiples intentos
- */
-export async function buildCourseData(
+export function buildCourseData(
     enrollment: Enrollment,
     assignments: Assignment[],
     submissions: Submission[],
     modules: Module[],
 ) {
     const course = enrollment.course;
-    const submissionMap = this.getLatestSubmissionsPerAssignment(submissions);
+    const submissionMap = getLatestSubmissionsPerAssignment(submissions);
 
     const total = assignments.length;
 
@@ -170,7 +160,7 @@ export async function buildCourseData(
         description: course.short_description || course.description,
         instructor: course.instructor ? {
             id: course.instructor.id,
-            avatar: course.instructor.image,
+            avatar: course.instructor.avatarUrl,
             firstName: course.instructor.firstName,
             lastName: course.instructor.lastName,
             fullName: `${course.instructor.firstName} ${course.instructor.lastName}`,
@@ -193,7 +183,7 @@ export async function buildCourseData(
 }
 
 export function getUpcomingDeadlines(assignments: Assignment[], submissions: Submission[]) {
-    const submissionMap = this.getLatestSubmissionsPerAssignment(submissions);
+    const submissionMap = getLatestSubmissionsPerAssignment(submissions);
     const now = new Date();
     const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -221,7 +211,6 @@ export function getUpcomingDeadlines(assignments: Assignment[], submissions: Sub
                 title: a.name,
                 courseId: a.courseId,
                 dueDate: a.dueDate,
-                type: a.type,
                 priority: this.getPriority(a.dueDate),
                 attemptsUsed: attempts, // Información útil: intentos usados
                 maxAttempts: a.maxAttempts,

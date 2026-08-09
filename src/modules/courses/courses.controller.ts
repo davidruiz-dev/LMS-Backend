@@ -9,10 +9,14 @@ import { UserRole } from 'src/modules/users/entities/user.entity';
 import { CurrentUser, UserPayload } from 'src/auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { GradeService } from './grade-calculation.service';
 
 @Controller('courses')
 export class CoursesController {
-  constructor(private readonly coursesService: CoursesService) { }
+  constructor(
+    private readonly coursesService: CoursesService, 
+    private readonly gradeService: GradeService
+  ) { }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
@@ -42,7 +46,7 @@ export class CoursesController {
 
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: UserPayload,) {
-    return this.coursesService.findOne(id, user.id, user.role);
+    return this.coursesService.findOneWithStats(id, user.id, user.role);
   }
 
   @Patch(':id')
@@ -76,5 +80,13 @@ export class CoursesController {
   ) {
     const enrollments = await this.coursesService.getEnrollmentsByCourseId(courseId, user);
     return enrollments;
+  }
+
+  @Get(':courseId/grade')
+  async getMyGrade(
+    @Param('courseId') courseId: string,
+    @CurrentUser() user: UserPayload,
+  ){
+    return await this.gradeService.calculateFinalGrade(courseId, user.id)
   }
 }

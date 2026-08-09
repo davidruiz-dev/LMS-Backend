@@ -1,6 +1,5 @@
 import { IsNotEmpty, IsOptional } from "class-validator"
 import { CourseStatus } from "src/modules/courses/entities/course.entity"
-import { GradeLevel } from "src/modules/grade-level/entities/grade-level.entity"
 import { User } from "src/modules/users/entities/user.entity"
 
 export class CreateCourseDto {
@@ -12,8 +11,6 @@ export class CreateCourseDto {
     startDate: Date
     @IsNotEmpty()
     endDate: Date
-    @IsNotEmpty()
-    gradeLevel: GradeLevel
     gradeLevelId: string
     @IsOptional()
     imageUrl?: string
@@ -24,4 +21,6 @@ export class CreateCourseDto {
     instructorId: string;
     @IsOptional()
     status: CourseStatus;
+    @IsOptional()
+    maxGrade?: number;
 }

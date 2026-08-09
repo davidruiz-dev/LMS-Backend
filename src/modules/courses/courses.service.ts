@@ -6,19 +6,19 @@ import { Course, CourseStatus } from './entities/course.entity';
 import { ILike, Repository } from 'typeorm';
 import { CoursePagination } from './dto/course-pagination.dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { GradeLevel } from '../grade-level/entities/grade-level.entity';
 import { User, UserRole } from 'src/modules/users/entities/user.entity';
 import { paginateResponse } from 'src/common/helpers/pagination-response';
 import { UserPayload } from 'src/auth/decorators/current-user.decorator';
 import { Enrollment, EnrollmentStatus } from 'src/modules/enrollments/entities/enrollment.entity';
+import { CourseDetailDto } from './dto/course-detail.dto';
+import { plainToInstance } from 'class-transformer';
+import { checkCourseAccess } from './utils/checkCourseAccess';
 
 @Injectable()
 export class CoursesService {
   constructor(
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
-    @InjectRepository(GradeLevel)
-    private readonly gradeLevelRepository: Repository<GradeLevel>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Enrollment)
@@ -28,18 +28,15 @@ export class CoursesService {
 
   async create(createCourseDto: CreateCourseDto, imagen: Express.Multer.File) {
     const newCourse = this.courseRepository.create(createCourseDto);
-    const grade = await this.gradeLevelRepository.findOneBy({ id: createCourseDto.gradeLevelId })
-    if (!grade) throw new Error('grade level not found');
     // instructor
     const instructor = await this.userRepository.findOneBy({ id: createCourseDto.instructorId });
     if (!instructor) throw new Error('instructor not found');
 
-    newCourse.gradeLevel = grade;
     newCourse.instructor = instructor;
     if (imagen) {
       const cloudinaryResponse = await this.cloudinaryService.uploadImage(
         imagen,
-        `cursos/${grade.name}`
+        `cursos/${createCourseDto.name}`
       );
       newCourse.imageUrl = cloudinaryResponse.secure_url;
       newCourse.imagePublicId = cloudinaryResponse.public_id;
@@ -65,8 +62,7 @@ export class CoursesService {
   //   const { page = 1, limit = 10, name, orderBy, order } = pagination
   //   const skip = (page - 1) * limit;
   //   const queryBuilder = this.courseRepository.createQueryBuilder('course')
-  //     .leftJoinAndSelect('course.gradeLevel', 'gradeLevel')
-  //     .withDeleted();
+  //     .leftJoinAndSelect('course.gradeLevel',   //     .withDeleted();
   //   if (name) queryBuilder.andWhere('course.name ILIKE :name', {
   //     name: `%${name}%`
   //   })
@@ -92,7 +88,7 @@ export class CoursesService {
   // findOne(id: string) {
   //   return this.courseRepository.findOne({
   //     where: { id },
-  //     relations: ['gradeLevel', 'instructor']
+  //     relations: ['instructor']
   //   });
   // }
 
@@ -104,7 +100,7 @@ export class CoursesService {
 
     const [data, total] = await this.courseRepository.findAndCount({
       where: [{ name: ILike(keyword) }],
-      relations: ['gradeLevel', 'instructor'],
+      relations: ['instructor'],
       take: limit,
       skip,
       order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
@@ -128,7 +124,7 @@ export class CoursesService {
   //     where: [
   //       { name: ILike(keyword) },
   //     ],
-  //     relations: ['gradeLevel', 'instructor'],
+  //     relations: ['instructor'],
   //     take: limit,
   //     skip: skip,
   //     order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
@@ -143,7 +139,7 @@ export class CoursesService {
 
     const [data, total] = await this.courseRepository.findAndCount({
       where: { enrollments: { userId: studentId }, name: ILike(keyword) },
-      relations: ['gradeLevel', 'instructor', 'enrollments'],
+      relations: ['instructor', 'enrollments'],
       take: limit,
       skip,
       order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
@@ -179,7 +175,7 @@ export class CoursesService {
           instructorId,
         },
       ],
-      relations: ['gradeLevel', 'instructor'],
+      relations: ['instructor'],
       take: limit,
       skip,
       order: orderBy && order ? { [orderBy]: order } : { createdAt: 'DESC' },
@@ -198,22 +194,50 @@ export class CoursesService {
   async findOne(id: string, userId: string, userRoles: UserRole): Promise<Course> {
     const course = await this.courseRepository.findOne({
       where: { id },
-      relations: ['gradeLevel', 'instructor', 'enrollments']
-      //relations: ['gradeLevel','instructor', 'modules', 'assignments', 'enrollments'],
+      relations: ['instructor', 'enrollments']
+      //relations: [instructor', 'modules', 'assignments', 'enrollments'],
     });
 
     if (!course) {
       throw new NotFoundException(`Course with ID "${id}" not found`);
     }
 
-    this.checkCourseAccess(course, userId, userRoles);
+    checkCourseAccess(course, userId, userRoles);
     return course;
+  }
+
+  async findOneWithStats(courseId: string, userId: string, userRole: UserRole): Promise<CourseDetailDto> {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { id: courseId },
+      relations: ['enrollments', 'instructor']
+    });
+    checkCourseAccess(course, userId, userRole);
+
+    const courseStat = await this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoin('course.assignments', 'assignment')
+      .leftJoin('course.modules', 'module')
+      .leftJoin('course.enrollments', 'enrollment')
+      .select([
+        'COUNT(DISTINCT assignment.id) AS "assignmentsCount"',
+        'COUNT(DISTINCT module.id) AS "modulesCount"',
+        'COUNT(DISTINCT enrollment.id) AS "enrollmentsCount"',
+      ])
+      .where('course.id = :courseId', { courseId })
+      .getRawOne();
+
+    return {
+      ...course,
+      assignmentsCount: Number(courseStat?.assignmentsCount ?? 0),
+      modulesCount: Number(courseStat?.modulesCount ?? 0),
+      enrollmentsCount: Number(courseStat?.enrollmentsCount ?? 0),
+    };
   }
 
   async update(id: string, updateCourseDto: UpdateCourseDto, imagen?: Express.Multer.File) {
     const course = await this.courseRepository.findOne({
       where: { id },
-      relations: ['gradeLevel', 'instructor'],
+      relations: ['instructor'],
     });
 
     if (!course) {
@@ -222,13 +246,6 @@ export class CoursesService {
 
     // Actualizar campos simples del DTO
     Object.assign(course, updateCourseDto);
-
-    // Actualizar gradeLevel si cambia
-    if (updateCourseDto.gradeLevelId && updateCourseDto.gradeLevelId !== course.gradeLevel?.id) {
-      const newGrade = await this.gradeLevelRepository.findOneBy({ id: updateCourseDto.gradeLevelId });
-      if (!newGrade) throw new Error('Grade level not found');
-      course.gradeLevel = newGrade;
-    }
 
     // Actualizar instructor si cambia
     if (updateCourseDto.instructorId && updateCourseDto.instructorId !== course.instructor?.id) {
@@ -246,7 +263,7 @@ export class CoursesService {
 
       const cloudinaryResponse = await this.cloudinaryService.uploadImage(
         imagen,
-        `cursos/${course.gradeLevel.name}`
+        `cursos/${course.name}`
       );
 
       course.imageUrl = cloudinaryResponse.secure_url;
@@ -262,7 +279,7 @@ export class CoursesService {
     if (course.instructorId !== userId && userRole !== UserRole.ADMIN) {
       throw new ForbiddenException('You do not have permission to delete this course');
     }
-    await this.courseRepository.remove(course);
+    await this.courseRepository.softRemove(course);
   }
 
   async publish(id: string, userId: string, userRole: UserRole): Promise<Course> {
@@ -274,15 +291,7 @@ export class CoursesService {
     return this.courseRepository.save(course);
   }
 
-  private checkCourseAccess(course: Course, userId: string, userRole: UserRole): void {
-    if (userRole === UserRole.ADMIN || course.instructorId === userId || course.enrollments.some(e => e.userId === userId)) {
-      return;
-    }
 
-    if (course.enrollments.some(e => e.userId === userId) && course.status !== CourseStatus.PUBLISHED) {
-      throw new ForbiddenException('No tienes acceso a este curso');
-    }
-  }
 
   async getEnrollmentsByCourseId(courseId: string, currentUser: UserPayload): Promise<Enrollment[]> {
     // 1. Verificar que el curso exista
@@ -332,7 +341,7 @@ export class CoursesService {
         'user.id',
         'user.firstName',
         'user.lastName',
-        'user.image',
+        'user.avatarUrl',
         'user.email',
       ])
       .where(
