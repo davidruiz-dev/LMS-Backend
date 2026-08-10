@@ -1,4 +1,5 @@
 import { Assignment } from "src/modules/assignments/entities/assignment.entity";
+import { Course } from "src/modules/courses/entities/course.entity";
 import { Enrollment } from "src/modules/enrollments/entities/enrollment.entity";
 import { Module } from "src/modules/modules/entities/module.entity";
 import { Submission, SubmissionStatus } from "src/modules/submissions/entities/submission.entity";
@@ -92,12 +93,11 @@ export function calculateStats(assignments: Assignment[], submissions: Submissio
 }
 
 export function buildCourseData(
-    enrollment: Enrollment,
     assignments: Assignment[],
     submissions: Submission[],
     modules: Module[],
+    course: Course
 ) {
-    const course = enrollment.course;
     const submissionMap = getLatestSubmissionsPerAssignment(submissions);
 
     const total = assignments.length;

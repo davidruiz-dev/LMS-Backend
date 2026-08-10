@@ -6,6 +6,7 @@ import { Assignment } from '../assignments/entities/assignment.entity';
 import { Submission, SubmissionStatus } from '../submissions/entities/submission.entity';
 import { Module } from '../modules/entities/module.entity';
 import { buildCourseData, calculateStats, getUpcomingDeadlines } from './utils/dashboard.utils';
+import { Course } from '../courses/entities/course.entity';
 
 @Injectable()
 export class DashboardService {
@@ -18,6 +19,8 @@ export class DashboardService {
         private submissionRepository: Repository<Submission>,
         @InjectRepository(Module)
         private moduleRepository: Repository<Module>,
+        @InjectRepository(Course)
+        private courseRepository: Repository<Course>
     ) { }
 
     async getStudentDashboard(studentId: string): Promise<any> {
@@ -76,12 +79,12 @@ export class DashboardService {
         const courses = await Promise.all(
             enrollments.map(enrollment =>
                 buildCourseData(
-                    enrollment,
                     assignments.filter(a => a.courseId === enrollment.courseId),
                     submissions.filter(s =>
                         assignments.some(a => a.id === s.assignmentId && a.courseId === enrollment.courseId)
                     ),
                     modules.filter(m => m.courseId === enrollment.courseId),
+                    enrollment.course
                 )
             )
         );
@@ -97,5 +100,58 @@ export class DashboardService {
     }
 
 
+
+    async getInstructorDashboard(instructorId: string): Promise<any>{
+       const courses = await this.courseRepository.find({
+        where: { instructorId }, relations: { instructor: true }
+       });
+
+        if (!courses) {
+            return {
+                stats: {
+                    totalCourses: 0,
+                },
+                courses: []
+            }
+        }
+
+        const courseIds = courses.map(c => c.id)
+        const assignments = await this.assignmentRepository.find({
+            where: { courseId: In(courseIds)}
+        })
+        const modules = await this.moduleRepository.find({
+            where: {
+                courseId: In(courseIds),
+                isPublished: true,
+            },
+        });
+        const submissions = await this.submissionRepository.find({
+            where: {
+                assignmentId: In(assignments.map(a => a.id)),
+            },
+        });
+
+        const coursesData = await Promise.all(
+            courses.map(course =>
+                buildCourseData(
+                    assignments.filter(a => a.courseId === course.id),
+                    submissions.filter(s =>
+                        assignments.some(a => a.id === s.assignmentId && a.courseId === course.id)
+                    ),
+                    modules.filter(m => m.courseId === course.id),
+                    course
+                )
+            )
+        );
+
+        return {
+            stats: {
+                totalCourses: courses.length,
+                totalAssignments: assignments.length
+            },
+            courses: coursesData
+        }
+
+    }
 
 }

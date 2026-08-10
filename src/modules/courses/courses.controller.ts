@@ -62,6 +62,24 @@ export class CoursesController {
     return this.coursesService.remove(id, user.id, user.role);
   }
 
+  @Patch(':id/restore')
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
+  restore(@Param('id') id: string, @CurrentUser() user: UserPayload,) {
+    return this.coursesService.restore(id, user.id, user.role);
+  }
+
+  @Patch(':id/archive')
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
+  archive(@Param('id') id: string, @CurrentUser() user: UserPayload,) {
+    return this.coursesService.archive(id, user.id, user.role);
+  }
+
+  @Patch(':id/unarchive')
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
+  unarchive(@Param('id') id: string, @CurrentUser() user: UserPayload,) {
+    return this.coursesService.unarchive(id, user.id, user.role);
+  }
+
   @Post(':id/publish')
   @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN)
   async publish(

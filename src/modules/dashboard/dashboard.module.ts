@@ -6,9 +6,10 @@ import { Enrollment } from '../enrollments/entities/enrollment.entity';
 import { Assignment } from '../assignments/entities/assignment.entity';
 import { Submission } from '../submissions/entities/submission.entity';
 import { Module as ModuleCourse } from '../modules/entities/module.entity';
+import { Course } from '../courses/entities/course.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Enrollment, Assignment, Submission, ModuleCourse])],
+  imports: [TypeOrmModule.forFeature([Enrollment, Assignment, Submission, ModuleCourse, Course])],
   controllers: [DashboardController],
   providers: [DashboardService],
 })

@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,6 +13,7 @@ import { Enrollment, EnrollmentStatus } from 'src/modules/enrollments/entities/e
 import { CourseDetailDto } from './dto/course-detail.dto';
 import { plainToInstance } from 'class-transformer';
 import { checkCourseAccess } from './utils/checkCourseAccess';
+import { assertCourseManager } from '../quizzes/utils/quiz-permissions';
 
 @Injectable()
 export class CoursesService {
@@ -273,20 +274,46 @@ export class CoursesService {
     return this.courseRepository.save(course);
   }
 
+  async archive(id: string, userId: string, userRole: UserRole): Promise<void> {
+    const course = await this.findOne(id, userId, userRole);
+    assertCourseManager(course, userId, userRole)
+    course.status = CourseStatus.ARCHIVED;
+    await this.courseRepository.save(course);
+  }
+
+  async unarchive(id: string, userId: string, userRole: UserRole): Promise<void> {
+    const course = await this.findOne(id, userId, userRole);
+    assertCourseManager(course, userId, userRole);
+    if (course.status !== CourseStatus.ARCHIVED) {
+      throw new BadRequestException(
+        'El curso no está archivado',
+      );
+    }
+    course.status = CourseStatus.PUBLISHED;
+    await this.courseRepository.save(course);
+  }
+
 
   async remove(id: string, userId: string, userRole: UserRole): Promise<void> {
     const course = await this.findOne(id, userId, userRole);
-    if (course.instructorId !== userId && userRole !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to delete this course');
-    }
+    assertCourseManager(course, userId, userRole)
     await this.courseRepository.softRemove(course);
+  }
+
+  async restore(id: string, userId: string, userRole: UserRole) {
+    const course = await this.courseRepository.findOneOrFail({
+      where: { id },
+      withDeleted: true,
+    });
+    await this.courseRepository.restore(course.id);
+    return this.courseRepository.findOneOrFail({
+      where: { id },
+    });
   }
 
   async publish(id: string, userId: string, userRole: UserRole): Promise<Course> {
     const course = await this.findOne(id, userId, userRole);
-    if (course.instructorId !== userId && userRole !== UserRole.ADMIN) {
-      throw new ForbiddenException('You do not have permission to publish this course');
-    }
+    assertCourseManager(course, userId, userRole)
     course.status = CourseStatus.PUBLISHED;
     return this.courseRepository.save(course);
   }
