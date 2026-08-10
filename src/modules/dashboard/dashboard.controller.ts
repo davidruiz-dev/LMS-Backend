@@ -1,4 +1,4 @@
-import { Controller, Get, Request } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { StudentDashboardResponse } from './dto/studentDashboard.dto';
 import { CurrentUser, UserPayload } from 'src/auth/decorators/current-user.decorator';
@@ -16,5 +16,10 @@ export class DashboardController {
   async getStudentStats(@CurrentUser() user: UserPayload) {
     const dashboard = await this.dashboardService.getStudentDashboard(user.id);
     return dashboard.stats;
+  }
+
+  @Get('instructor')
+  async getInstructorDashboard(@CurrentUser() user: UserPayload) {
+    return this.dashboardService.getInstructorDashboard(user.id)
   }
 }
