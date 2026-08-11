@@ -8,8 +8,12 @@ async function bootstrap() {
 
   const usersService = app.get(UsersService);
 
-  const email = process.env.ADMIN_EMAIL || 'admin@example.com'
-  const password = process.env.ADMIN_PASSWORD || 'admin'
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD are required');
+  }
   const existingAdmin = await usersService.findOneByEmail(email);
 
   if (!existingAdmin) {
@@ -17,7 +21,7 @@ async function bootstrap() {
       firstName: 'Admin',
       lastName: 'Admin',
       email: email,
-      password: password, 
+      password: password,
       role: UserRole.ADMIN,
     });
     console.log('Admin user created');
