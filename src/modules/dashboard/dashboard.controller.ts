@@ -22,4 +22,9 @@ export class DashboardController {
   async getInstructorDashboard(@CurrentUser() user: UserPayload) {
     return this.dashboardService.getInstructorDashboard(user.id)
   }
+
+  @Get('admin')
+  async getAdminDashboard(@CurrentUser() user: UserPayload) {
+    return this.dashboardService.getAdminDashboard(user)
+  }
 }
