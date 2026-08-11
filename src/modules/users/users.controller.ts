@@ -2,13 +2,12 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestj
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Public } from 'src/auth/decorators/public.decorator';
 import { UserPaginationDto } from './dto/user-pagination.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
-  
+  constructor(private readonly usersService: UsersService) { }
+
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
@@ -25,9 +24,12 @@ export class UsersController {
     return this.usersService.findInstructorByEmail(email);
   }
 
-  @Get('students/search')
-  findStudentsByEmail(@Query('email') email: string) {
-    return this.usersService.findStudentsByEmail(email);
+  @Get(':courseId/search')
+  findStudentsByEmail(
+    @Param('courseId') courseId: string,
+    @Query('email') email: string
+  ) {
+    return this.usersService.findStudentsByEmail(courseId, email);
   }
 
   @Get(':id')
