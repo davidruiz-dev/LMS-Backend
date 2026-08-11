@@ -14,6 +14,7 @@ import { QuizzesModule } from './modules/quizzes/quizzes.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ProfileModule } from './modules/profile/profile.module';
+import { SeederService } from './seed';
 
 @Module({
   imports: [
@@ -45,6 +46,6 @@ import { ProfileModule } from './modules/profile/profile.module';
     ProfileModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [SeederService],
 })
 export class AppModule {}
