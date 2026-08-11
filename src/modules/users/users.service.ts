@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt';
 import { UserPaginationDto } from './dto/user-pagination.dto';
 import { paginateResponse } from 'src/common/helpers/pagination-response';
 import { ConfigService } from '@nestjs/config';
+import { Enrollment, EnrollmentStatus } from '../enrollments/entities/enrollment.entity';
 
 @Injectable()
 export class UsersService {
@@ -73,19 +74,46 @@ export class UsersService {
     });
   }
 
-  async findStudentsByEmail(email: string): Promise<User[]> {
-    if (email && email.trim() !== '') {
-      return this.userRepository.find({
-        where: { email: ILike(`%${email}%`), role: UserRole.STUDENT }
-      });
-    }
+  async findStudentsByEmail(
+    courseId: string,
+    email: string,
+): Promise<User[]> {
+  const query = this.userRepository
+    .createQueryBuilder('user')
+    .where('user.role = :role', {
+      role: UserRole.STUDENT,
+    })
+    .andWhere('user.isActive = :isActive', {
+      isActive: true,
+    })
+    .andWhere((qb) => {
+      const subQuery = qb
+        .subQuery()
+        .select('1')
+        .from(Enrollment, 'enrollment')
+        .where('enrollment.userId = user.id')
+        .andWhere('enrollment.courseId = :courseId')
+        .andWhere('enrollment.status = :status')
+        .getQuery();
 
-    return this.userRepository.find({
-      where: { role: UserRole.STUDENT },
-      order: { createdAt: 'ASC' },
-      take: 7
+      return `NOT EXISTS ${subQuery}`;
+    })
+    .setParameters({
+      courseId,
+      status: EnrollmentStatus.ACTIVE,
+    });
+
+  if (email?.trim()) {
+    query.andWhere('user.email ILIKE :email', {
+      email: `%${email.trim()}%`,
     });
   }
+
+  return query
+    .orderBy('user.createdAt', 'ASC')
+    .take(7)
+    .getMany();
+}
 
 
   findOne(id: string) {
