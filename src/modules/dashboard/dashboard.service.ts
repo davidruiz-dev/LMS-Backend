@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Enrollment, EnrollmentStatus } from '../enrollments/entities/enrollment.entity';
@@ -6,7 +6,9 @@ import { Assignment } from '../assignments/entities/assignment.entity';
 import { Submission, SubmissionStatus } from '../submissions/entities/submission.entity';
 import { Module } from '../modules/entities/module.entity';
 import { buildCourseData, calculateStats, getUpcomingDeadlines } from './utils/dashboard.utils';
-import { Course } from '../courses/entities/course.entity';
+import { Course, CourseStatus } from '../courses/entities/course.entity';
+import { UserPayload } from 'src/auth/decorators/current-user.decorator';
+import { UserRole } from '../users/entities/user.entity';
 
 @Injectable()
 export class DashboardService {
@@ -154,4 +156,49 @@ export class DashboardService {
 
     }
 
+    async getAdminDashboard(user: UserPayload) {
+        if(user.role !== UserRole.ADMIN) {
+            throw new ForbiddenException('No tienes el rol de administrador')
+        }
+        const courses = await this.courseRepository.find({
+            where: { status: CourseStatus.PUBLISHED}, relations: { instructor: true }
+        })
+
+        const courseIds = courses.map(c => c.id)
+        const assignments = await this.assignmentRepository.find({
+            where: { courseId: In(courseIds)}
+        })
+        const submissions = await this.submissionRepository.find({
+            where: {
+                assignmentId: In(assignments.map(a => a.id)),
+            },
+        });
+        const modules = await this.moduleRepository.find({
+            where: {
+                courseId: In(courseIds),
+                isPublished: true,
+            },
+        });
+
+        const coursesData = await Promise.all(
+            courses.map(course =>
+                buildCourseData(
+                    assignments.filter(a => a.courseId === course.id),
+                    submissions.filter(s =>
+                        assignments.some(a => a.id === s.assignmentId && a.courseId === course.id)
+                    ),
+                    modules.filter(m => m.courseId === course.id),
+                    course
+                )
+            )
+        );
+
+        return {
+            stats: {
+                totalCourses: courses.length,
+                totalAssignments: assignments.length
+            },
+            courses: coursesData
+        }
+    }
 }
